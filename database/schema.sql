@@ -1,13 +1,3 @@
--- =========================================================
--- AntiqueX Database
--- PostgreSQL Database Schema
--- =========================================================
-
-
--- =========================================================
--- 1. USERS
--- =========================================================
-
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -16,10 +6,14 @@ CREATE TABLE users (
     password TEXT NOT NULL
 );
 
+CREATE TABLE admins (
+    admin_id SERIAL PRIMARY KEY,
+    username VARCHAR(50) NOT NULL UNIQUE,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    role VARCHAR(30) NOT NULL DEFAULT 'admin'
+);
 
--- =========================================================
--- 2. ADDRESSES
--- =========================================================
 
 CREATE TABLE addresses (
     address_id SERIAL PRIMARY KEY,
@@ -38,10 +32,6 @@ CREATE TABLE addresses (
 );
 
 
--- =========================================================
--- 3. CATEGORIES
--- =========================================================
-
 CREATE TABLE categories (
     category_id SERIAL PRIMARY KEY,
     category_name VARCHAR(100) NOT NULL UNIQUE,
@@ -49,21 +39,19 @@ CREATE TABLE categories (
 );
 
 
--- =========================================================
--- 4. ITEMS
--- =========================================================
-
 CREATE TABLE items (
     item_id SERIAL PRIMARY KEY,
 
     seller_id INT NOT NULL,
     category_id INT NOT NULL,
+    admin_id INT,
 
     title VARCHAR(200) NOT NULL,
     description TEXT,
     year_of_origin INT,
     condition VARCHAR(100),
-    starting_price NUMERIC(12,2) NOT NULL CHECK (starting_price >= 0),
+    starting_price NUMERIC(12,2) NOT NULL
+        CHECK (starting_price >= 0),
 
     CONSTRAINT fk_item_seller
         FOREIGN KEY (seller_id)
@@ -73,13 +61,14 @@ CREATE TABLE items (
     CONSTRAINT fk_item_category
         FOREIGN KEY (category_id)
         REFERENCES categories(category_id)
-        ON DELETE RESTRICT
+        ON DELETE RESTRICT,
+
+    CONSTRAINT fk_item_admin
+        FOREIGN KEY (admin_id)
+        REFERENCES admins(admin_id)
+        ON DELETE SET NULL
 );
 
-
--- =========================================================
--- 5. ITEM IMAGES
--- =========================================================
 
 CREATE TABLE item_images (
     img_id SERIAL PRIMARY KEY,
@@ -94,10 +83,6 @@ CREATE TABLE item_images (
 );
 
 
--- =========================================================
--- 6. AUCTIONS
--- =========================================================
-
 CREATE TABLE auctions (
     auction_id SERIAL PRIMARY KEY,
 
@@ -111,6 +96,8 @@ CREATE TABLE auctions (
 
     status VARCHAR(30) NOT NULL DEFAULT 'scheduled',
 
+    winner_bid_id INT,
+
     CONSTRAINT fk_auction_item
         FOREIGN KEY (item_id)
         REFERENCES items(item_id)
@@ -120,10 +107,6 @@ CREATE TABLE auctions (
         CHECK (end_time > start_time)
 );
 
-
--- =========================================================
--- 7. BIDS
--- =========================================================
 
 CREATE TABLE bids (
     bid_id SERIAL PRIMARY KEY,
@@ -147,10 +130,31 @@ CREATE TABLE bids (
         ON DELETE CASCADE
 );
 
+ALTER TABLE auctions
+ADD CONSTRAINT fk_auction_winner_bid
+FOREIGN KEY (winner_bid_id)
+REFERENCES bids(bid_id)
+ON DELETE SET NULL;
 
--- =========================================================
--- 8. WATCHLIST
--- =========================================================
+
+CREATE TABLE notifications (
+    notification_id SERIAL PRIMARY KEY,
+
+    user_id INT NOT NULL,
+
+    type VARCHAR(50) NOT NULL,
+    message TEXT NOT NULL,
+
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+
+    CONSTRAINT fk_notification_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(user_id)
+        ON DELETE CASCADE
+);
+
 
 CREATE TABLE watchlist (
     watchlist_id SERIAL PRIMARY KEY,
@@ -175,9 +179,6 @@ CREATE TABLE watchlist (
 );
 
 
--- =========================================================
--- 9. PAYMENT METHODS
--- =========================================================
 
 CREATE TABLE payment_methods (
     method_id SERIAL PRIMARY KEY,
@@ -191,10 +192,6 @@ CREATE TABLE payment_methods (
         ON DELETE CASCADE
 );
 
-
--- =========================================================
--- 10. WALLETS
--- =========================================================
 
 CREATE TABLE wallets (
     wallet_id SERIAL PRIMARY KEY,
@@ -211,9 +208,6 @@ CREATE TABLE wallets (
 );
 
 
--- =========================================================
--- 11. WALLET TRANSACTIONS
--- =========================================================
 
 CREATE TABLE wallet_transactions (
     wallet_txn_id SERIAL PRIMARY KEY,
@@ -233,9 +227,6 @@ CREATE TABLE wallet_transactions (
 );
 
 
--- =========================================================
--- 12. TRANSACTIONS
--- =========================================================
 
 CREATE TABLE transactions (
     txn_id SERIAL PRIMARY KEY,
@@ -273,10 +264,6 @@ CREATE TABLE transactions (
 );
 
 
--- =========================================================
--- 13. SHIPMENTS
--- =========================================================
-
 CREATE TABLE shipments (
     shipment_id SERIAL PRIMARY KEY,
 
@@ -302,10 +289,6 @@ CREATE TABLE shipments (
         ON DELETE RESTRICT
 );
 
-
--- =========================================================
--- 14. REVIEWS
--- =========================================================
 
 CREATE TABLE reviews (
     review_id SERIAL PRIMARY KEY,
@@ -338,15 +321,12 @@ CREATE TABLE reviews (
 );
 
 
--- =========================================================
--- 15. DISPUTES
--- =========================================================
-
 CREATE TABLE disputes (
     dispute_id SERIAL PRIMARY KEY,
 
     txn_id INT NOT NULL,
     raised_by INT NOT NULL,
+    resolved_by INT,
 
     status VARCHAR(30) NOT NULL DEFAULT 'open',
     date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -360,13 +340,14 @@ CREATE TABLE disputes (
     CONSTRAINT fk_dispute_user
         FOREIGN KEY (raised_by)
         REFERENCES users(user_id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_dispute_admin
+        FOREIGN KEY (resolved_by)
+        REFERENCES admins(admin_id)
+        ON DELETE SET NULL
 );
 
-
--- =========================================================
--- 16. AUTO-BIDS
--- =========================================================
 
 CREATE TABLE auto_bids (
     auto_bid_id SERIAL PRIMARY KEY,
