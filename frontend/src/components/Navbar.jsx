@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import "./Navbar.css";
 
 function Navbar() {
@@ -14,19 +14,22 @@ function Navbar() {
             <div className="navbar-container">
 
                 <Link to="/" className="navbar-logo">
+                    <span className="navbar-logo-icon">⚜</span>
                     AntiqueX
                 </Link>
 
                 <div className="navbar-links">
-                    <Link to="/">Home</Link>
-                    <Link to="/items">Auctions</Link>
-                    <Link to="/categories">Categories</Link>
+                    <NavLink to="/" end className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Home</NavLink>
+                    <NavLink to="/items" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Auctions</NavLink>
+                    <NavLink to="/categories" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Categories</NavLink>
 
                     {user && (
                         <>
-                            <Link to="/sell">Sell Item</Link>
-                            <Link to="/my-items">My Items</Link>
-                            <Link to="/watchlist">Watchlist</Link>
+                            <NavLink to="/sell" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Sell Item</NavLink>
+                            <NavLink to="/my-items" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>My Items</NavLink>
+                            <NavLink to="/purchases" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Orders</NavLink>
+                            <NavLink to="/wallet" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Wallet</NavLink>
+                            <NavLink to="/watchlist" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Watchlist</NavLink>
                         </>
                     )}
                 </div>
@@ -35,7 +38,7 @@ function Navbar() {
                     {user ? (
                         <>
                             <span className="welcome">
-                                Hi, {user.username}
+                                Hi, <strong>{user.username}</strong>
                             </span>
 
                             <button
@@ -47,19 +50,8 @@ function Navbar() {
                         </>
                     ) : (
                         <>
-                            <Link
-                                to="/login"
-                                className="login-link"
-                            >
-                                Login
-                            </Link>
-
-                            <Link
-                                to="/register"
-                                className="register-button"
-                            >
-                                Register
-                            </Link>
+                            <Link to="/login" className="login-link">Login</Link>
+                            <Link to="/register" className="register-button">Register</Link>
                         </>
                     )}
                 </div>

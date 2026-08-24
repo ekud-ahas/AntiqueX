@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import "../App.css";
+import "./CategoryItems.css";
 
 function CategoryItems() {
   const { id } = useParams();
@@ -38,64 +40,89 @@ function CategoryItems() {
   }, [id]);
 
   if (loading) {
-    return <h2>Loading...</h2>;
+    return <div className="category-message">Loading category items…</div>;
   }
 
-  if (error) {
-    return <h2>{error}</h2>;
+  if (error || !category) {
+    return <div className="category-message error">{error || "Category not found"}</div>;
   }
 
   return (
-    <main>
-      <p>
-        <Link to="/categories">&larr; All Categories</Link>
-      </p>
+    <div className="category-items-page">
+      <Link to="/categories" className="back-link">
+        &larr; Back to Categories
+      </Link>
 
-      <h1>{category.category_name}</h1>
-      <p>{category.description}</p>
-
-      <hr />
+      <div className="category-banner">
+        <h1>{category.category_name}</h1>
+        <p>{category.description || "Browse all antique items available in this category."}</p>
+      </div>
 
       {items.length === 0 ? (
-        <p>No items in this category yet.</p>
+        <div className="empty-state">
+          <p>No items listed under <strong>{category.category_name}</strong> yet.</p>
+          <p>
+            <Link to="/sell">Be the first to list an item in this category</Link>
+          </p>
+        </div>
       ) : (
-        <div>
+        <div className="category-items-grid">
           {items.map((item) => (
-            <div key={item.item_id}>
-              {item.thumbnail_url && (
-                <img
-                  src={item.thumbnail_url}
-                  alt={item.title}
-                  width="150"
-                />
-              )}
+            <div className="category-item-card" key={item.item_id}>
+              <div className="category-item-img-container">
+                {item.thumbnail_url ? (
+                  <img
+                    className="category-item-img"
+                    src={
+                      item.thumbnail_url?.startsWith("/uploads/")
+                        ? `http://localhost:5000${item.thumbnail_url}`
+                        : item.thumbnail_url
+                    }
+                    alt={item.title}
+                  />
+                ) : (
+                  <div className="no-image" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted-light)" }}>
+                    No Image Available
+                  </div>
+                )}
+              </div>
 
-              <h2>
-                <Link to={`/items/${item.item_id}`}>{item.title}</Link>
-              </h2>
+              <div className="category-item-content">
+                <h2>
+                  <Link to={`/items/${item.item_id}`}>{item.title}</Link>
+                </h2>
 
-              <p>{item.description}</p>
+                <p className="category-item-desc">
+                  {item.description
+                    ? item.description.length > 90
+                      ? item.description.substring(0, 90) + "…"
+                      : item.description
+                    : "No description available."}
+                </p>
 
-              <p>
-                <strong>Starting Price:</strong> ৳{item.starting_price}
-              </p>
+                <div className="category-item-footer">
+                  <div>
+                    <span style={{ fontSize: "11px", color: "var(--muted)", textTransform: "uppercase" }}>Price</span>
+                    <p className="category-item-price">৳{Number(item.starting_price).toLocaleString()}</p>
+                  </div>
+                  <span className="category-item-seller">By {item.seller}</span>
+                </div>
 
-              <p>
-                <strong>Seller:</strong> {item.seller}
-              </p>
-
-              <p>
-                <strong>Auction Status:</strong>{" "}
-                {item.auction_status || "Not yet listed for auction"}
-              </p>
-
-              <hr />
+                <Link
+                  to={`/items/${item.item_id}`}
+                  className="btn btn-primary"
+                  style={{ marginTop: "14px", width: "100%" }}
+                >
+                  View Auction
+                </Link>
+              </div>
             </div>
           ))}
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
 export default CategoryItems;
+

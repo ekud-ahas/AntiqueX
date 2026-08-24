@@ -1,106 +1,113 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+import "../App.css";
+import "./Auth.css";
 
 function Login() {
-  const navigate = useNavigate();
+    const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+    const [form, setForm] = useState({ email: "", password: "" });
+    const [message, setMessage] = useState("");
+    const [isError, setIsError] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-  const [message, setMessage] = useState("");
+    const handleChange = (e) => {
+        setForm({ ...form, [e.target.name]: e.target.value });
+    };
 
-  const handleChange = (event) => {
-    setForm({
-      ...form,
-      [event.target.name]: event.target.value,
-    });
-  };
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setMessage("");
+        setLoading(true);
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    setMessage("");
+        try {
+            const response = await fetch("http://localhost:5000/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(form),
+            });
 
-    try {
-      const response = await fetch(
-        "http://localhost:5000/api/auth/login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(form),
+            const data = await response.json();
+
+            if (!response.ok) {
+                setIsError(true);
+                setMessage(data.error || "Login failed. Please try again.");
+                return;
+            }
+
+            localStorage.setItem("user", JSON.stringify(data.user));
+            setIsError(false);
+            setMessage("Login successful! Redirecting…");
+
+            setTimeout(() => navigate("/items"), 900);
+        } catch {
+            setIsError(true);
+            setMessage("Could not connect to the server.");
+        } finally {
+            setLoading(false);
         }
-      );
+    };
 
-      const data = await response.json();
+    return (
+        <div className="auth-page">
+            <div className="auth-card">
 
-      if (!response.ok) {
-        setMessage(data.error || "Login failed.");
-        return;
-      }
+                <div className="auth-logo">⚜</div>
+                <h1>Welcome back</h1>
+                <p className="auth-subtitle">Sign in to your AntiqueX account</p>
 
-      // Save logged-in user
-      localStorage.setItem(
-        "user",
-        JSON.stringify(data.user)
-      );
+                <form className="auth-form" onSubmit={handleSubmit}>
 
-      setMessage("Login successful!");
+                    <div className="form-group">
+                        <label htmlFor="email">Email</label>
+                        <input
+                            id="email"
+                            type="email"
+                            name="email"
+                            value={form.email}
+                            onChange={handleChange}
+                            placeholder="you@example.com"
+                            required
+                        />
+                    </div>
 
-      setTimeout(() => {
-        navigate("/items");
-      }, 1000);
-    } catch (error) {
-      console.error(error);
-      setMessage("Could not connect to the server.");
-    }
-  };
+                    <div className="form-group">
+                        <label htmlFor="password">Password</label>
+                        <input
+                            id="password"
+                            type="password"
+                            name="password"
+                            value={form.password}
+                            onChange={handleChange}
+                            placeholder="Your password"
+                            required
+                        />
+                    </div>
 
-  return (
-    <main>
-      <h1>Login to AntiqueX</h1>
+                    <button
+                        type="submit"
+                        className="auth-submit"
+                        disabled={loading}
+                    >
+                        {loading ? "Signing in…" : "Sign In"}
+                    </button>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>Email</label>
-          <br />
+                    {message && (
+                        <p className={`auth-msg ${isError ? "error" : "success"}`}>
+                            {message}
+                        </p>
+                    )}
 
-          <input
-            type="email"
-            name="email"
-            value={form.email}
-            onChange={handleChange}
-            required
-          />
+                </form>
+
+                <div className="auth-link-row">
+                    Don&apos;t have an account?{" "}
+                    <Link to="/register">Create one</Link>
+                </div>
+
+            </div>
         </div>
-
-        <br />
-
-        <div>
-          <label>Password</label>
-          <br />
-
-          <input
-            type="password"
-            name="password"
-            value={form.password}
-            onChange={handleChange}
-            required
-          />
-        </div>
-
-        <br />
-
-        <button type="submit">
-          Login
-        </button>
-      </form>
-
-      {message && <p>{message}</p>}
-    </main>
-  );
+    );
 }
 
-export default Login;
+export default Login;

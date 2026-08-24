@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import "../App.css";
+import "./Watchlist.css";
 
 function Watchlist() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -64,70 +66,101 @@ function Watchlist() {
 
   if (!user) {
     return (
-      <main>
-        <h1>Your Watchlist</h1>
-        <p>
-          Please <Link to="/login">login</Link> to see your watchlist.
-        </p>
-      </main>
+      <div className="watchlist-page">
+        <div className="empty-state">
+          <h1>Your Watchlist</h1>
+          <p>Please <Link to="/login">sign in</Link> to view and manage your saved items.</p>
+        </div>
+      </div>
     );
   }
 
   if (loading) {
-    return <h2>Loading your watchlist...</h2>;
+    return <div className="items-message">Loading your saved items…</div>;
   }
 
   return (
-    <main>
-      <h1>Your Watchlist</h1>
+    <div className="watchlist-page">
+      <div className="page-header">
+        <h1>My Watchlist</h1>
+        <p>Keep track of antique items and auctions you are interested in.</p>
+      </div>
 
-      {error && <p>{error}</p>}
+      {error && <p className="msg msg-error" style={{ textAlign: "center", marginBottom: "25px" }}>{error}</p>}
 
       {watchlist.length === 0 ? (
-        <p>
-          You are not watching any items yet. Browse{" "}
-          <Link to="/items">auctions</Link> and add some!
-        </p>
+        <div className="empty-state">
+          <p>You have not added any items to your watchlist yet.</p>
+          <p>
+            Explore <Link to="/items">live auctions</Link> and click &ldquo;Add to Watchlist&rdquo; to track them here.
+          </p>
+        </div>
       ) : (
-        <div>
+        <div className="watchlist-grid">
           {watchlist.map((entry) => (
-            <div key={entry.watchlist_id}>
-              {entry.thumbnail_url && (
-                <img
-                  src={entry.thumbnail_url}
-                  alt={entry.title}
-                  width="150"
-                />
-              )}
+            <div className="watchlist-card" key={entry.watchlist_id}>
+              <div className="watchlist-img-container">
+                {entry.thumbnail_url ? (
+                  <img
+                    className="watchlist-img"
+                    src={
+                      entry.thumbnail_url?.startsWith("/uploads/")
+                        ? `http://localhost:5000${entry.thumbnail_url}`
+                        : entry.thumbnail_url
+                    }
+                    alt={entry.title}
+                  />
+                ) : (
+                  <div className="no-image" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted-light)" }}>
+                    No Image Available
+                  </div>
+                )}
+              </div>
 
-              <h2>
-                <Link to={`/items/${entry.item_id}`}>{entry.title}</Link>
-              </h2>
+              <div className="watchlist-content">
+                <h2>
+                  <Link to={`/items/${entry.item_id}`}>{entry.title}</Link>
+                </h2>
 
-              <p>
-                <strong>Starting Price:</strong> ৳{entry.starting_price}
-              </p>
+                <div className="watchlist-info-row">
+                  <span className="watchlist-label">Starting Price</span>
+                  <span className="watchlist-val">৳{Number(entry.starting_price).toLocaleString()}</span>
+                </div>
 
-              <p>
-                <strong>Highest Bid:</strong> ৳{entry.highest_bid}
-              </p>
+                <div className="watchlist-info-row">
+                  <span className="watchlist-label">Highest Bid</span>
+                  <span className="watchlist-val" style={{ color: "var(--accent)" }}>
+                    {entry.highest_bid ? `৳${Number(entry.highest_bid).toLocaleString()}` : "No bids yet"}
+                  </span>
+                </div>
 
-              <p>
-                <strong>Auction Status:</strong>{" "}
-                {entry.auction_status || "Not yet listed for auction"}
-              </p>
+                <div className="watchlist-info-row">
+                  <span className="watchlist-label">Status</span>
+                  <span className={`badge badge-${entry.auction_status || "scheduled"}`}>
+                    {entry.auction_status || "Scheduled"}
+                  </span>
+                </div>
 
-              <button onClick={() => handleRemove(entry.item_id)}>
-                Remove from Watchlist
-              </button>
-
-              <hr />
+                <div className="watchlist-actions">
+                  <Link to={`/items/${entry.item_id}`} className="btn btn-primary">
+                    View Auction
+                  </Link>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => handleRemove(entry.item_id)}
+                  >
+                    Remove
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
 export default Watchlist;
+

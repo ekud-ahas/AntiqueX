@@ -60,13 +60,20 @@ const getItemById = async (req, res) => {
                 i.year_of_origin,
                 i.condition,
                 i.starting_price,
-
                 i.seller_id,
 
                 c.category_id,
                 c.category_name,
 
-                u.username AS seller
+                u.username AS seller,
+
+                a.auction_id,
+                a.start_time,
+                a.end_time,
+                a.min_increment,
+                a.status AS auction_status,
+
+                COALESCE((SELECT COUNT(*)::int FROM bids WHERE bids.auction_id = a.auction_id), 0) AS total_bids
 
             FROM items i
 
@@ -75,6 +82,9 @@ const getItemById = async (req, res) => {
 
             JOIN users u
                 ON i.seller_id = u.user_id
+
+            LEFT JOIN auctions a
+                ON a.item_id = i.item_id
 
             WHERE i.item_id = $1
             `,
@@ -300,19 +310,49 @@ const createItem = async (req, res) => {
             );
         }
 
+        // Automatically create active auction for the newly created item
+        const calculatedMinInc = Math.max(100, Math.round((Number(starting_price) * 0.05) / 100) * 100);
+        const minIncrement = req.body.min_increment ? Number(req.body.min_increment) : calculatedMinInc;
+        const durationDays = req.body.auction_duration ? Number(req.body.auction_duration) : 7;
+
+        const auctionResult = await client.query(
+            `
+            INSERT INTO auctions
+            (
+                item_id,
+                start_time,
+                end_time,
+                min_increment,
+                status
+            )
+            VALUES
+            (
+                $1,
+                NOW(),
+                NOW() + ($3 || ' days')::INTERVAL,
+                $2,
+                'active'
+            )
+            RETURNING *
+            `,
+            [newItem.item_id, minIncrement, String(durationDays)]
+        );
+
         await client.query("COMMIT");
 
 
         res.status(201).json({
 
             message:
-                "Item created successfully",
+                "Item and auction created successfully",
 
             item: {
                 ...newItem,
+                auction: auctionResult.rows[0],
                 images
             }
         });
+
 
 
     } catch (error) {
@@ -350,7 +390,9 @@ const updateItem = async (req, res) => {
             description,
             year_of_origin,
             condition,
-            starting_price
+            starting_price,
+            min_increment,
+            auction_duration
         } = req.body;
 
 
@@ -417,6 +459,31 @@ const updateItem = async (req, res) => {
                 id
             ]
         );
+
+        // Update auction settings if provided
+        if (min_increment && Number(min_increment) > 0) {
+            await pool.query(
+                `
+                UPDATE auctions
+                SET min_increment = $1
+                WHERE item_id = $2
+                `,
+                [Number(min_increment), id]
+            );
+        }
+
+        // If duration extension requested and auction is active
+        if (auction_duration && Number(auction_duration) > 0) {
+            await pool.query(
+                `
+                UPDATE auctions
+                SET end_time = NOW() + ($1 || ' days')::INTERVAL,
+                    status = 'active'
+                WHERE item_id = $2
+                `,
+                [String(auction_duration), id]
+            );
+        }
 
 
         res.json({

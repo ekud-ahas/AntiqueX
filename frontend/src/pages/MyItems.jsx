@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import "../App.css";
+import "./MyItems.css";
 
 function MyItems() {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -40,7 +42,7 @@ function MyItems() {
   }, []);
 
   const handleDelete = async (item_id) => {
-    if (!window.confirm("Delete this listing? This cannot be undone.")) {
+    if (!window.confirm("Are you sure you want to delete this listing? This cannot be undone.")) {
       return;
     }
 
@@ -62,80 +64,109 @@ function MyItems() {
       }
 
       fetchMyItems();
-    } catch (error) {
-      console.error(error);
+    } catch {
       setError("Could not connect to the server.");
     }
   };
 
   if (!user) {
     return (
-      <main>
-        <h1>My Items</h1>
-        <p>
-          Please <Link to="/login">login</Link> to manage your listings.
-        </p>
-      </main>
+      <div className="my-items-page">
+        <div className="empty-state">
+          <h1>My Items</h1>
+          <p>Please <Link to="/login">sign in</Link> to manage your listed items.</p>
+        </div>
+      </div>
     );
   }
 
   if (loading) {
-    return <h2>Loading your items...</h2>;
+    return <div className="items-message">Loading your listed items…</div>;
   }
 
   return (
-    <main>
-      <h1>My Items</h1>
+    <div className="my-items-page">
+      <div className="my-items-topbar">
+        <div>
+          <h1>My Listed Items</h1>
+          <p>Manage, edit, or delete items you have submitted for auction.</p>
+        </div>
+        <Link to="/sell" className="btn btn-primary">
+          + List New Item
+        </Link>
+      </div>
 
-      <p>
-        <Link to="/sell">+ List a new item</Link>
-      </p>
-
-      {error && <p>{error}</p>}
+      {error && <p className="msg msg-error" style={{ textAlign: "center", marginBottom: "25px" }}>{error}</p>}
 
       {items.length === 0 ? (
-        <p>You haven't listed any items yet.</p>
+        <div className="empty-state">
+          <p>You have not listed any items for auction yet.</p>
+          <p>
+            Ready to sell? <Link to="/sell">List your first antique</Link>
+          </p>
+        </div>
       ) : (
-        <div>
+        <div className="my-items-grid">
           {items.map((item) => (
-            <div key={item.item_id}>
-              {item.thumbnail_url && (
-                <img
-                  src={
-                    item.thumbnail_url?.startsWith("/uploads/")
-                      ? `http://localhost:5000${item.thumbnail_url}`
-                      : item.thumbnail_url
-                  }
-                  alt={item.title}
-                  width="150"
-                />
-              )}
+            <div className="my-item-card" key={item.item_id}>
+              <div className="my-item-img-container">
+                {item.thumbnail_url ? (
+                  <img
+                    className="my-item-img"
+                    src={
+                      item.thumbnail_url?.startsWith("/uploads/")
+                        ? `http://localhost:5000${item.thumbnail_url}`
+                        : item.thumbnail_url
+                    }
+                    alt={item.title}
+                  />
+                ) : (
+                  <div className="no-image" style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--muted-light)" }}>
+                    No Image Available
+                  </div>
+                )}
+              </div>
 
-              <h2>{item.title}</h2>
+              <div className="my-item-content">
+                <h2>{item.title}</h2>
 
-              <p>
-                <strong>Category:</strong> {item.category_name}
-              </p>
+                <div className="my-item-meta">
+                  <div className="my-item-meta-row">
+                    <span className="my-item-meta-label">Category</span>
+                    <span className="my-item-meta-val">{item.category_name}</span>
+                  </div>
+                  <div className="my-item-meta-row">
+                    <span className="my-item-meta-label">Starting Price</span>
+                    <span className="my-item-meta-val" style={{ color: "var(--accent)" }}>৳{Number(item.starting_price).toLocaleString()}</span>
+                  </div>
+                  {item.condition && (
+                    <div className="my-item-meta-row">
+                      <span className="my-item-meta-label">Condition</span>
+                      <span className="my-item-meta-val">{item.condition}</span>
+                    </div>
+                  )}
+                </div>
 
-              <p>
-                <strong>Starting Price:</strong> ৳{item.starting_price}
-              </p>
-
-              <Link to={`/my-items/${item.item_id}/edit`}>
-                <button>Edit</button>
-              </Link>{" "}
-
-              <button onClick={() => handleDelete(item.item_id)}>
-                Delete
-              </button>
-
-              <hr />
+                <div className="my-item-actions">
+                  <Link to={`/my-items/${item.item_id}/edit`} className="btn btn-outline">
+                    Edit Details
+                  </Link>
+                  <button
+                    type="button"
+                    className="btn btn-danger"
+                    onClick={() => handleDelete(item.item_id)}
+                  >
+                    Delete
+                  </button>
+                </div>
+              </div>
             </div>
           ))}
         </div>
       )}
-    </main>
+    </div>
   );
 }
 
 export default MyItems;
+

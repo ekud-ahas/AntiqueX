@@ -1,6 +1,15 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import "../App.css";
 import "./Categories.css";
+
+const CATEGORY_ICONS = {
+    "Antique Furniture": "🪑",
+    "Fine Art & Paintings": "🎨",
+    "Vintage Jewelry": "💎",
+    "Rare Coins & Currency": "🪙",
+    "Ancient Sculptures": "🏺",
+};
 
 function Categories() {
     const [categories, setCategories] = useState([]);
@@ -13,7 +22,6 @@ function Categories() {
                 if (!response.ok) {
                     throw new Error("Failed to fetch categories");
                 }
-
                 return response.json();
             })
             .then((data) => {
@@ -22,7 +30,7 @@ function Categories() {
             })
             .catch((error) => {
                 console.error(error);
-                setError("Could not load categories.");
+                setError("Could not load categories. Please make sure the backend is running.");
                 setLoading(false);
             });
     }, []);
@@ -30,7 +38,7 @@ function Categories() {
     if (loading) {
         return (
             <div className="category-message">
-                Loading categories...
+                Loading antique categories…
             </div>
         );
     }
@@ -45,12 +53,10 @@ function Categories() {
 
     return (
         <div className="categories-page">
-
             <div className="categories-header">
                 <h1>Browse by Category</h1>
-
                 <p>
-                    Explore antique items by category.
+                    Explore curated antique collections curated by category.
                 </p>
             </div>
 
@@ -60,39 +66,35 @@ function Categories() {
                 </div>
             ) : (
                 <div className="categories-grid">
-
                     {categories.map((category) => (
                         <div
                             className="category-card"
                             key={category.category_id}
                         >
                             <div className="category-icon">
-                                ◆
+                                {CATEGORY_ICONS[category.category_name] || "⚜"}
                             </div>
 
-                            <h2>
-                                {category.category_name}
-                            </h2>
+                            <h2>{category.category_name}</h2>
 
                             <p>
                                 {category.description ||
-                                    "Explore items in this category."}
+                                    "Explore historical items in this category."}
                             </p>
 
                             <Link
                                 to={`/categories/${category.category_id}`}
                                 className="category-button"
                             >
-                                View Items
+                                Browse Items
                             </Link>
                         </div>
                     ))}
-
                 </div>
             )}
-
         </div>
     );
 }
 
 export default Categories;
+

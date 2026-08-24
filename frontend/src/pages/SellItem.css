@@ -1,98 +1,161 @@
 .sell-page {
-    min-height: calc(100vh - 70px);
-    background: #faf9f7;
-    padding: 45px 20px 70px;
+    min-height: calc(100vh - 62px);
+    background: var(--bg);
+    padding: 45px 20px 80px;
 }
 
 .sell-container {
-    max-width: 650px;
+    max-width: 680px;
     margin: 0 auto;
     background: white;
-    border: 1px solid #e3e3e3;
-    border-radius: 8px;
-    padding: 30px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 38px 40px;
+    box-shadow: var(--shadow-sm);
 }
 
 .sell-container h1 {
-    margin-top: 0;
-    color: #2b2b2b;
+    margin: 0 0 8px;
+    color: var(--text);
+    font-size: 28px;
+    font-weight: 800;
 }
 
 .sell-description {
-    color: #666;
-    margin-bottom: 25px;
+    color: var(--muted);
+    margin: 0 0 30px;
+    font-size: 15px;
+    line-height: 1.5;
 }
 
-.sell-container form {
+.sell-form {
     display: flex;
     flex-direction: column;
+    gap: 20px;
 }
 
-.sell-container label {
-    font-size: 14px;
-    font-weight: bold;
-    color: #444;
-    margin: 12px 0 6px;
-}
-
-.sell-container input,
-.sell-container textarea {
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    font-size: 15px;
-}
-
-.sell-container textarea {
-    resize: vertical;
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
 }
 
 .image-section {
-    margin-top: 20px;
-    padding: 18px;
+    padding: 22px;
     background: #faf9f7;
-    border: 1px solid #e3e3e3;
-    border-radius: 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
 .image-section h3 {
-    margin-top: 0;
+    margin: 0 0 4px;
+    font-size: 16px;
+    color: var(--text);
 }
 
-.or-text {
+.or-divider {
+    display: flex;
+    align-items: center;
     text-align: center;
-    color: #888;
-    font-weight: bold;
-    margin: 15px 0;
+    color: var(--muted-light);
+    font-size: 12px;
+    font-weight: 700;
+    margin: 4px 0;
 }
 
-.sell-container button {
-    margin-top: 25px;
-    padding: 11px;
-    border: none;
-    border-radius: 5px;
-    background: #8b5e3c;
-    color: white;
-    font-size: 15px;
-    cursor: pointer;
+.or-divider::before,
+.or-divider::after {
+    content: ;
+ flex: 1;
+ border-bottom: 1px solid var(--border);
 }
 
-.sell-container button:hover {
-    background: #70482d;
+.or-divider span {
+ padding: 0 10px;
 }
 
-.sell-container button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+.file-input-wrapper {
+ display: flex;
+ flex-direction: column;
+ gap: 6px;
+}
+
+.file-input-wrapper input[type= file] {
+ background: white;
+ padding: 9px;
+ border: 1px dashed var(--border-dark);
+ border-radius: var(--radius-sm);
+ cursor: pointer;
+}
+
+.sell-submit-btn {
+ width: 100%;
+ padding: 13px;
+ background: var(--accent);
+ color: white;
+ border: none;
+ border-radius: var(--radius-sm);
+ font-size: 15px;
+ font-weight: 700;
+ cursor: pointer;
+ transition: background var(--transition), box-shadow var(--transition);
+ margin-top: 10px;
+}
+
+.sell-submit-btn:hover {
+ background: var(--accent-dark);
+ box-shadow: 0 4px 14px rgba(139,94,60,0.3);
+}
+
+.sell-submit-btn:disabled {
+ opacity: 0.6;
+ cursor: not-allowed;
 }
 
 .sell-result {
-    margin-top: 20px;
-    text-align: center;
-    color: #555;
+ margin-top: 16px;
+ text-align: center;
 }
 
-.sell-message {
-    text-align: center;
-    padding: 70px 20px;
+/* Auction Settings */
+.auction-settings-section {
+    padding: 22px;
+    background: #f4f0eb;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.auction-settings-section h3 {
+    margin: 0 0 2px;
+    font-size: 16px;
+    color: var(--text);
+}
+
+.auction-settings-hint {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.field-hint {
+    display: block;
+    font-size: 11px;
+    color: var(--muted-light);
+    margin-top: 4px;
+}
+
+@media (max-width: 600px) {
+ .sell-container {
+ padding: 26px 18px;
+ }
+ .form-row {
+ grid-template-columns: 1fr;
+ }
 }

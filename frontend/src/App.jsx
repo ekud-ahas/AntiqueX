@@ -12,6 +12,8 @@ import Watchlist from "./pages/Watchlist";
 import SellItem from "./pages/SellItem";
 import MyItems from "./pages/MyItems";
 import EditItem from "./pages/EditItem";
+import Wallet from "./pages/Wallet";
+import Purchases from "./pages/Purchases";
 
 
 function App() {
@@ -31,6 +33,8 @@ function App() {
         <Route path="/sell" element={<SellItem />} />
         <Route path="/my-items" element={<MyItems />} />
         <Route path="/my-items/:id/edit" element={<EditItem />} />
+        <Route path="/wallet" element={<Wallet />} />
+        <Route path="/purchases" element={<Purchases />} />
       </Routes>
     </BrowserRouter>
   );

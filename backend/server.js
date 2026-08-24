@@ -7,6 +7,9 @@ const authRoutes = require("./routes/authRoutes");
 const auctionRoutes = require("./routes/auctionRoutes");
 const categoryRoutes = require("./routes/categoryRoutes");
 const watchlistRoutes = require("./routes/watchlistRoutes");
+const transactionRoutes = require("./routes/transactionRoutes");
+const walletRoutes = require("./routes/walletRoutes");
+const paymentRoutes = require("./routes/paymentRoutes");
 
 const app = express();
 
@@ -38,6 +41,11 @@ app.use("/api/categories", categoryRoutes);
 
 // Watchlist APIs
 app.use("/api/watchlist", watchlistRoutes);
+
+// Transaction & Payment APIs
+app.use("/api/transactions", transactionRoutes);
+app.use("/api/wallet", walletRoutes);
+app.use("/api/payments", paymentRoutes);
 
 const PORT = process.env.PORT || 5000;
 

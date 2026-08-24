@@ -1,12 +1,37 @@
+:root {
+    --accent: #8b5e3c;
+    --accent-dark: #70482d;
+    --accent-light: #f5ede5;
+    --bg: #faf9f7;
+    --card: #ffffff;
+    --border: #e5e5e5;
+    --border-dark: #d0d0d0;
+    --text: #2b2b2b;
+    --muted: #666666;
+    --muted-light: #999999;
+    --success: #2e7d32;
+    --success-bg: #e8f5e9;
+    --error: #c62828;
+    --error-bg: #ffebee;
+    --warning: #e65100;
+    --radius: 8px;
+    --radius-sm: 5px;
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.07);
+    --shadow-md: 0 5px 20px rgba(0,0,0,0.10);
+    --transition: 0.2s ease;
+}
+
 * {
     box-sizing: border-box;
 }
 
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
-    color: #222;
-    background: #faf9f7;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
 }
 
 button,
@@ -14,4 +39,8 @@ input,
 textarea,
 select {
     font-family: inherit;
+}
+
+a {
+    color: inherit;
 }

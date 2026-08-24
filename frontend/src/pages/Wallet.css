@@ -1,0 +1,346 @@
+.wallet-page {
+    padding: 40px 20px 80px;
+    background: var(--bg);
+}
+
+.wallet-container {
+    max-width: 960px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+}
+
+.wallet-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.wallet-header h1 {
+    margin: 0 0 4px;
+    font-size: 28px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.wallet-subtitle {
+    margin: 0;
+    color: var(--muted);
+    font-size: 14px;
+}
+
+/* Balance Hero Card */
+.balance-hero-card {
+    background: linear-gradient(135deg, #3d271d 0%, #20140e 100%);
+    color: white;
+    border-radius: var(--radius);
+    padding: 32px 36px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: var(--shadow-md);
+    flex-wrap: wrap;
+    gap: 24px;
+}
+
+.balance-info {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.balance-label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #dfc8b4;
+    font-weight: 700;
+}
+
+.balance-amount {
+    font-size: 38px;
+    font-weight: 800;
+    margin: 0;
+    color: #fff;
+    letter-spacing: -0.5px;
+}
+
+.balance-account-tag {
+    font-size: 12px;
+    color: #b09a86;
+}
+
+.balance-actions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-light {
+    background: rgba(255, 255, 255, 0.12);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 10px 18px;
+    border-radius: var(--radius-sm);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all var(--transition);
+}
+
+.btn-light:hover {
+    background: rgba(255, 255, 255, 0.22);
+}
+
+/* Wallet Card Action Box */
+.wallet-card-action {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.action-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.action-card-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: var(--text);
+    font-weight: 800;
+}
+
+.close-tab-btn {
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.close-tab-btn:hover {
+    color: var(--text);
+}
+
+.action-hint {
+    margin: 0;
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.4;
+}
+
+.quick-amount-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.action-form {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    max-width: 480px;
+}
+
+/* Payment Methods */
+.methods-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+}
+
+.method-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.method-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+}
+
+.method-icon {
+    font-size: 18px;
+}
+
+.btn-remove-method {
+    background: none;
+    border: none;
+    color: var(--danger);
+    font-size: 11px;
+    font-weight: 700;
+    cursor: pointer;
+    padding: 4px;
+}
+
+.btn-remove-method:hover {
+    text-decoration: underline;
+}
+
+.add-method-form {
+    display: flex;
+    gap: 8px;
+    max-width: 480px;
+    margin-top: 6px;
+}
+
+.add-method-form input {
+    flex: 1;
+    padding: 9px 12px;
+    border: 1px solid var(--border-dark);
+    border-radius: var(--radius-sm);
+    font-size: 14px;
+    outline: none;
+}
+
+/* History Card */
+.wallet-history-card {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px 28px;
+    box-shadow: var(--shadow-sm);
+}
+
+.history-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.history-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.history-table-wrapper {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+}
+
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    text-align: left;
+}
+
+.history-table th {
+    background: var(--bg);
+    padding: 10px 14px;
+    color: var(--muted);
+    font-weight: 700;
+    font-size: 11px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+}
+
+.history-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #f2eee8;
+    color: var(--text);
+}
+
+.history-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.txn-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.txn-deposit {
+    background: #e8f7ed;
+    color: #198754;
+}
+
+.txn-withdrawal {
+    background: #fff4e5;
+    color: #d97706;
+}
+
+.txn-payment {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.txn-sale_proceeds {
+    background: #ecfdf5;
+    color: #059669;
+}
+
+.txn-amount-cell {
+    font-weight: 800;
+    font-size: 14px;
+}
+
+.amount-credit {
+    color: #198754;
+}
+
+.amount-debit {
+    color: #dc2626;
+}
+
+.txn-time-cell {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.txn-id-cell {
+    font-family: monospace;
+    color: var(--muted-light);
+    font-size: 11px;
+}
+
+.empty-history-box {
+    padding: 30px 20px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 14px;
+    background: var(--bg);
+    border-radius: var(--radius-sm);
+    border: 1px dashed var(--border);
+}
+
+@media (max-width: 768px) {
+    .balance-hero-card {
+        padding: 24px 20px;
+    }
+    .balance-amount {
+        font-size: 30px;
+    }
+    .balance-actions {
+        width: 100%;
+    }
+    .balance-actions button {
+        flex: 1;
+        text-align: center;
+    }
+}

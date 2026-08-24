@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import "../App.css";
 
 function WatchlistButton({ itemId }) {
   const user = JSON.parse(localStorage.getItem("user"));
@@ -16,10 +17,12 @@ function WatchlistButton({ itemId }) {
     fetch(`http://localhost:5000/api/watchlist/${user.user_id}`)
       .then((response) => response.json())
       .then((data) => {
-        const watching = data.some(
-          (entry) => entry.item_id === Number(itemId)
-        );
-        setIsWatching(watching);
+        if (Array.isArray(data)) {
+          const watching = data.some(
+            (entry) => entry.item_id === Number(itemId)
+          );
+          setIsWatching(watching);
+        }
         setChecking(false);
       })
       .catch((error) => {
@@ -30,7 +33,7 @@ function WatchlistButton({ itemId }) {
 
   const handleToggle = async () => {
     if (!user) {
-      setMessage("Please login to use your watchlist.");
+      setMessage("Please login to save items to your watchlist.");
       return;
     }
 
@@ -70,9 +73,8 @@ function WatchlistButton({ itemId }) {
 
         setIsWatching(true);
       }
-    } catch (error) {
-      console.error(error);
-      setMessage("Something went wrong. Please try again.");
+    } catch {
+      setMessage("Could not update watchlist. Please try again.");
     }
   };
 
@@ -81,13 +83,20 @@ function WatchlistButton({ itemId }) {
   }
 
   return (
-    <div>
-      <button onClick={handleToggle}>
-        {isWatching ? "Remove from Watchlist" : "Add to Watchlist"}
+    <div style={{ marginTop: "12px" }}>
+      <button
+        type="button"
+        onClick={handleToggle}
+        className={isWatching ? "btn btn-danger" : "btn btn-outline"}
+        style={{ width: "100%", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
+      >
+        <span>{isWatching ? "❤️" : "🤍"}</span>
+        <span>{isWatching ? "Remove from Watchlist" : "Save to Watchlist"}</span>
       </button>
-      {message && <p>{message}</p>}
+      {message && <p style={{ color: "var(--warning)", fontSize: "13px", margin: "6px 0 0", textAlign: "center" }}>{message}</p>}
     </div>
   );
 }
 
 export default WatchlistButton;
+
