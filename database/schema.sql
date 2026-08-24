@@ -1,12 +1,6 @@
--- ============================================================================
--- AntiqueX Database Schema
--- Generated according to the provided Entity-Relationship (ER) Diagram
--- Target RDBMS: PostgreSQL
--- ============================================================================
 
--- ----------------------------------------------------------------------------
 -- Drop existing tables (in reverse dependency order to avoid FK errors)
--- ----------------------------------------------------------------------------
+
 DROP TABLE IF EXISTS watchlist CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS disputes CASCADE;
@@ -26,10 +20,8 @@ DROP TABLE IF EXISTS addresses CASCADE;
 DROP TABLE IF EXISTS admins CASCADE;
 DROP TABLE IF EXISTS users CASCADE;
 
-
--- ============================================================================
 -- 1. USERS
--- ============================================================================
+
 CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -38,10 +30,8 @@ CREATE TABLE users (
     password TEXT NOT NULL
 );
 
-
--- ============================================================================
 -- 2. ADMINS
--- ============================================================================
+
 CREATE TABLE admins (
     admin_id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
@@ -50,10 +40,8 @@ CREATE TABLE admins (
     role VARCHAR(30) NOT NULL DEFAULT 'admin'
 );
 
-
--- ============================================================================
 -- 3. ADDRESSES (User has Addresses)
--- ============================================================================
+
 CREATE TABLE addresses (
     address_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -68,20 +56,16 @@ CREATE TABLE addresses (
         ON DELETE CASCADE
 );
 
-
--- ============================================================================
 -- 4. CATEGORIES (Admin manages Categories, sorts Items)
--- ============================================================================
+
 CREATE TABLE categories (
     category_id SERIAL PRIMARY KEY,
     category_name VARCHAR(100) NOT NULL UNIQUE,
     description TEXT
 );
 
-
--- ============================================================================
 -- 5. ITEMS (User lists Item, Category sorts Item)
--- ============================================================================
+
 CREATE TABLE items (
     item_id SERIAL PRIMARY KEY,
     seller_id INT NOT NULL,
@@ -106,10 +90,8 @@ CREATE TABLE items (
         ON DELETE SET NULL
 );
 
-
--- ============================================================================
 -- 6. ITEM IMAGES (Item displays Item Images)
--- ============================================================================
+
 CREATE TABLE item_images (
     img_id SERIAL PRIMARY KEY,
     item_id INT NOT NULL,
@@ -120,10 +102,8 @@ CREATE TABLE item_images (
         ON DELETE CASCADE
 );
 
-
--- ============================================================================
 -- 7. AUCTIONS (Item opens Auction)
--- ============================================================================
+
 CREATE TABLE auctions (
     auction_id SERIAL PRIMARY KEY,
     item_id INT NOT NULL UNIQUE,
@@ -140,10 +120,8 @@ CREATE TABLE auctions (
         CHECK (end_time > start_time)
 );
 
-
--- ============================================================================
 -- 8. AUTO-BIDS (User sets Auto-Bid for an Auction)
--- ============================================================================
+
 CREATE TABLE auto_bids (
     auto_bid_id SERIAL PRIMARY KEY,
     auction_id INT NOT NULL,
@@ -160,10 +138,8 @@ CREATE TABLE auto_bids (
         ON DELETE CASCADE
 );
 
-
--- ============================================================================
 -- 9. BIDS (User submits Bid, Auction collects Bids, Auto-Bid places Bids)
--- ============================================================================
+
 CREATE TABLE bids (
     bid_id SERIAL PRIMARY KEY,
     auction_id INT NOT NULL,
@@ -185,10 +161,8 @@ CREATE TABLE bids (
         ON DELETE SET NULL
 );
 
-
--- ============================================================================
 -- 10. PAYMENT METHODS (User stores Payment Methods)
--- ============================================================================
+
 CREATE TABLE payment_methods (
     method_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -199,10 +173,8 @@ CREATE TABLE payment_methods (
         ON DELETE CASCADE
 );
 
-
--- ============================================================================
 -- 11. WALLETS (User owns Wallet)
--- ============================================================================
+
 CREATE TABLE wallets (
     wallet_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL UNIQUE,
@@ -213,10 +185,8 @@ CREATE TABLE wallets (
         ON DELETE CASCADE
 );
 
-
--- ============================================================================
 -- 12. WALLET TRANSACTIONS (Wallet logs Wallet Transactions)
--- ============================================================================
+
 CREATE TABLE wallet_transactions (
     wallet_txn_id SERIAL PRIMARY KEY,
     wallet_id INT NOT NULL,
@@ -229,10 +199,8 @@ CREATE TABLE wallet_transactions (
         ON DELETE CASCADE
 );
 
-
--- ============================================================================
 -- 13. TRANSACTIONS (Auction closes Transaction; Buyer/Seller; Payment Method)
--- ============================================================================
+
 CREATE TABLE transactions (
     txn_id SERIAL PRIMARY KEY,
     auction_id INT NOT NULL UNIQUE,
@@ -265,10 +233,8 @@ CREATE TABLE transactions (
         ON DELETE SET NULL
 );
 
-
--- ============================================================================
 -- 14. SHIPMENTS (Transaction dispatches Shipment to Address)
--- ============================================================================
+
 CREATE TABLE shipments (
     shipment_id SERIAL PRIMARY KEY,
     txn_id INT NOT NULL UNIQUE,
@@ -288,10 +254,8 @@ CREATE TABLE shipments (
         ON DELETE RESTRICT
 );
 
-
--- ============================================================================
 -- 15. REVIEWS (User leaves / earns Review for a completed Transaction)
--- ============================================================================
+
 CREATE TABLE reviews (
     review_id SERIAL PRIMARY KEY,
     txn_id INT NOT NULL,
@@ -314,10 +278,8 @@ CREATE TABLE reviews (
         ON DELETE CASCADE
 );
 
-
--- ============================================================================
 -- 16. DISPUTES (User raises Dispute for Transaction; Admin resolves it)
--- ============================================================================
+
 CREATE TABLE disputes (
     dispute_id SERIAL PRIMARY KEY,
     txn_id INT NOT NULL,
@@ -340,10 +302,8 @@ CREATE TABLE disputes (
         ON DELETE SET NULL
 );
 
-
--- ============================================================================
 -- 17. NOTIFICATIONS (User receives Notifications triggered by system events)
--- ============================================================================
+
 CREATE TABLE notifications (
     notification_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -357,10 +317,8 @@ CREATE TABLE notifications (
         ON DELETE CASCADE
 );
 
-
--- ============================================================================
 -- 18. WATCHLIST (User tracks Items in Watchlist)
--- ============================================================================
+
 CREATE TABLE watchlist (
     watchlist_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
@@ -378,10 +336,8 @@ CREATE TABLE watchlist (
         UNIQUE (user_id, item_id)
 );
 
-
--- ============================================================================
 -- Performance & Query Optimization Indexes
--- ============================================================================
+
 CREATE INDEX idx_items_seller_id ON items(seller_id);
 CREATE INDEX idx_items_category_id ON items(category_id);
 CREATE INDEX idx_auctions_item_id ON auctions(item_id);
