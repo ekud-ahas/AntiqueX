@@ -23,7 +23,17 @@ INSERT INTO users (username, full_name, email, password) VALUES
 ('william_jones', 'William Jones', 'william@example.com', '$2b$10$wOaUj5x9b3vK2eQ9qZ7Ype7XjJqC8vL7tW6uR5eT4yU3iO2pA1sD');
 
 -- -----------------------------------------------------------------------------
--- 3. ADDRESSES (User has Addresses)
+-- 3. CATEGORIES (Admin manages Categories - 1:N)
+-- -----------------------------------------------------------------------------
+INSERT INTO categories (admin_id, category_name, description) VALUES
+(1, 'Antique Furniture', 'Historical craftsmanship and collectible period furniture'),
+(1, 'Fine Art & Paintings', 'Rare 18th-20th century European and Asian fine paintings'),
+(2, 'Vintage Jewelry', 'Estate jewelry, authentic gemstones, and period precious ornaments'),
+(1, 'Rare Coins & Currency', 'Numismatic treasures, ancient gold coins, and historical banknotes'),
+(2, 'Ancient Sculptures', 'Sculptures and statues from classical and ancient eras');
+
+-- -----------------------------------------------------------------------------
+-- 4. ADDRESSES (User has Addresses)
 -- -----------------------------------------------------------------------------
 INSERT INTO addresses (user_id, street, city, postal_code, district, division) VALUES
 (1, '12 Lake Road, Gulshan-2', 'Dhaka', '1212', 'Dhaka', 'Dhaka'),
@@ -31,16 +41,6 @@ INSERT INTO addresses (user_id, street, city, postal_code, district, division) V
 (3, '23 College Road, Sonadanga', 'Khulna', '9100', 'Khulna', 'Khulna'),
 (4, '18 Main Street, Boalia', 'Rajshahi', '6000', 'Rajshahi', 'Rajshahi'),
 (5, '7 University Road, Zindabazar', 'Sylhet', '3100', 'Sylhet', 'Sylhet');
-
--- -----------------------------------------------------------------------------
--- 4. CATEGORIES (Admin manages Categories; sorts Items)
--- -----------------------------------------------------------------------------
-INSERT INTO categories (category_name, description) VALUES
-('Antique Furniture', 'Historical craftsmanship and collectible period furniture'),
-('Fine Art & Paintings', 'Rare 18th-20th century European and Asian fine paintings'),
-('Vintage Jewelry', 'Estate jewelry, authentic gemstones, and period precious ornaments'),
-('Rare Coins & Currency', 'Numismatic treasures, ancient gold coins, and historical banknotes'),
-('Ancient Sculptures', 'Sculptures and statues from classical and ancient eras');
 
 -- -----------------------------------------------------------------------------
 -- 5. ITEMS (User lists Item; Category sorts Item; Admin manages Item)
