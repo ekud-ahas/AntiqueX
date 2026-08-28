@@ -54,7 +54,6 @@ CREATE TABLE items (
     item_id SERIAL PRIMARY KEY,
     seller_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     category_id INT NOT NULL REFERENCES categories(category_id) ON DELETE RESTRICT,
-    admin_id INT REFERENCES admins(admin_id) ON DELETE SET NULL,
     title VARCHAR(200) NOT NULL,
     description TEXT,
     year_of_origin INT,
@@ -84,7 +83,6 @@ CREATE TABLE auctions (
 -- 10. AUTO-BIDS
 CREATE TABLE auto_bids (
     auto_bid_id SERIAL PRIMARY KEY,
-    auction_id INT NOT NULL REFERENCES auctions(auction_id) ON DELETE CASCADE,
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     increment NUMERIC(12, 2) NOT NULL CHECK (increment > 0),
     max_amount NUMERIC(12, 2) NOT NULL CHECK (max_amount > 0)
@@ -111,23 +109,22 @@ ALTER TABLE auctions
 CREATE TABLE transactions (
     txn_id SERIAL PRIMARY KEY,
     auction_id INT NOT NULL UNIQUE REFERENCES auctions(auction_id) ON DELETE RESTRICT,
-    buyer_id INT NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
-    seller_id INT NOT NULL REFERENCES users(user_id) ON DELETE RESTRICT,
     winner_bid_id INT REFERENCES bids(bid_id) ON DELETE SET NULL,
-    payment_method_id INT REFERENCES payment_methods(method_id) ON DELETE SET NULL,
     amount NUMERIC(12, 2) NOT NULL CHECK (amount >= 0),
     payment_status VARCHAR(30) NOT NULL DEFAULT 'pending',
-    close_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 13. WALLET TRANSACTIONS
 CREATE TABLE wallet_transactions (
     wallet_txn_id SERIAL PRIMARY KEY,
     wallet_id INT NOT NULL REFERENCES wallets(wallet_id) ON DELETE CASCADE,
+    bid_id INT REFERENCES bids(bid_id) ON DELETE SET NULL,
     txn_id INT UNIQUE REFERENCES transactions(txn_id) ON DELETE SET NULL,
+    payment_method_id INT REFERENCES payment_methods(method_id) ON DELETE SET NULL,
     type VARCHAR(30) NOT NULL,
     amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
-    transaction_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+    time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
 -- 14. SHIPMENTS
@@ -138,7 +135,7 @@ CREATE TABLE shipments (
     carrier VARCHAR(100),
     tracking_number VARCHAR(100),
     shipping_date TIMESTAMP,
-    delivery_date TIMESTAMP,
+    deliver_date TIMESTAMP,
     status VARCHAR(30) NOT NULL DEFAULT 'pending'
 );
 
@@ -156,7 +153,7 @@ CREATE TABLE reviews (
 -- 16. DISPUTES
 CREATE TABLE disputes (
     dispute_id SERIAL PRIMARY KEY,
-    txn_id INT NOT NULL REFERENCES transactions(txn_id) ON DELETE CASCADE,
+    shipment_id INT NOT NULL REFERENCES shipments(shipment_id) ON DELETE CASCADE,
     raised_by INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     resolved_by INT REFERENCES admins(admin_id) ON DELETE SET NULL,
     status VARCHAR(30) NOT NULL DEFAULT 'open',
