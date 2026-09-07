@@ -1,8 +1,8 @@
 const express = require("express");
-
 const router = express.Router();
 
 const upload = require("../middleware/upload");
+const { authenticateToken, optionalAuth } = require("../middleware/authMiddleware");
 
 const {
     getItems,
@@ -15,29 +15,16 @@ const {
     deleteItemImage
 } = require("../controllers/itemController");
 
-// GET all items
+// Public endpoints
 router.get("/", getItems);
-
-// CREATE item
-// Supports optional local image upload
-router.post("/", upload.single("image"), createItem);
-
-// GET one item
 router.get("/:id", getItemById);
-
-// UPDATE item
-router.put("/:id", updateItem);
-
-// DELETE item
-router.delete("/:id", deleteItem);
-
-// GET images for an item
 router.get("/:id/images", getItemImages);
 
-// ADD image URL to an item
-router.post("/:id/images", addItemImage);
-
-// DELETE an image
-router.delete("/:id/images/:imgId", deleteItemImage);
+// Protected endpoints (Requires Authentication & Ownership)
+router.post("/", authenticateToken, upload.single("image"), createItem);
+router.put("/:id", authenticateToken, updateItem);
+router.delete("/:id", authenticateToken, deleteItem);
+router.post("/:id/images", authenticateToken, addItemImage);
+router.delete("/:id/images/:imgId", authenticateToken, deleteItemImage);
 
 module.exports = router;

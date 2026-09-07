@@ -1,21 +1,13 @@
-const pool = require("../config/db");
+const categoryModel = require("../models/categoryModel");
 
 // GET /api/categories
 // List all categories
 const getCategories = async (req, res) => {
     try {
-        const result = await pool.query(
-            `
-            SELECT category_id, category_name, description
-            FROM categories
-            ORDER BY category_name
-            `
-        );
-
-        res.json(result.rows);
-
+        const categories = await categoryModel.getAllCategories();
+        res.json(categories);
     } catch (error) {
-        console.error(error);
+        console.error("GET CATEGORIES ERROR:", error);
         res.status(500).json({
             error: "Failed to retrieve categories"
         });
@@ -27,26 +19,17 @@ const getCategories = async (req, res) => {
 const getCategory = async (req, res) => {
     try {
         const { id } = req.params;
+        const category = await categoryModel.getCategoryById(id);
 
-        const result = await pool.query(
-            `
-            SELECT category_id, category_name, description
-            FROM categories
-            WHERE category_id = $1
-            `,
-            [id]
-        );
-
-        if (result.rows.length === 0) {
+        if (!category) {
             return res.status(404).json({
                 error: "Category not found"
             });
         }
 
-        res.json(result.rows[0]);
-
+        res.json(category);
     } catch (error) {
-        console.error(error);
+        console.error("GET CATEGORY ERROR:", error);
         res.status(500).json({
             error: "Failed to retrieve category"
         });
@@ -54,58 +37,74 @@ const getCategory = async (req, res) => {
 };
 
 // GET /api/categories/:id/items
-// Browse items belonging to a category (with primary image + auction status if any)
+// Browse items belonging to a category
 const getCategoryItems = async (req, res) => {
     try {
         const { id } = req.params;
 
-        const categoryCheck = await pool.query(
-            "SELECT category_id FROM categories WHERE category_id = $1",
-            [id]
-        );
-
-        if (categoryCheck.rows.length === 0) {
+        const category = await categoryModel.getCategoryById(id);
+        if (!category) {
             return res.status(404).json({
                 error: "Category not found"
             });
         }
 
-        const result = await pool.query(
-            `
-            SELECT
-                i.item_id,
-                i.title,
-                i.description,
-                i.year_of_origin,
-                i.condition,
-                i.starting_price,
-                u.username AS seller,
-                a.auction_id,
-                a.status AS auction_status,
-                (
-                    SELECT img_url
-                    FROM item_images
-                    WHERE item_images.item_id = i.item_id
-                    ORDER BY img_id
-                    LIMIT 1
-                ) AS thumbnail_url
-            FROM items i
-            JOIN users u
-                ON i.seller_id = u.user_id
-            LEFT JOIN auctions a
-                ON a.item_id = i.item_id
-            WHERE i.category_id = $1
-            ORDER BY i.item_id
-            `,
-            [id]
-        );
-
-        res.json(result.rows);
-
+        const items = await categoryModel.getItemsByCategory(id);
+        res.json(items);
     } catch (error) {
-        console.error(error);
+        console.error("GET CATEGORY ITEMS ERROR:", error);
         res.status(500).json({
             error: "Failed to retrieve items for category"
+        });
+    }
+};
+
+// POST /api/categories
+// Create a new category (Admin / Moderator only)
+const createCategory = async (req, res) => {
+    try {
+        const { category_name, description } = req.body;
+
+        if (!category_name || !category_name.trim()) {
+            return res.status(400).json({
+                error: "Category name is required"
+            });
+        }
+
+        const adminId = req.user.userId;
+        const newCategory = await categoryModel.createCategory(adminId, category_name.trim(), description || null);
+
+        res.status(201).json({
+            message: "Category created successfully",
+            category: newCategory
+        });
+    } catch (error) {
+        console.error("CREATE CATEGORY ERROR:", error);
+        res.status(500).json({
+            error: "Failed to create category"
+        });
+    }
+};
+
+// DELETE /api/categories/:id
+// Delete a category (Admin / Moderator only)
+const deleteCategory = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const deleted = await categoryModel.deleteCategoryById(id);
+        if (!deleted) {
+            return res.status(404).json({
+                error: "Category not found"
+            });
+        }
+        res.json({
+            message: `Category "${deleted.category_name}" deleted successfully`,
+            deleted
+        });
+    } catch (error) {
+        console.error("DELETE CATEGORY ERROR:", error);
+        res.status(error.statusCode || 500).json({
+            error: error.message || "Failed to delete category"
         });
     }
 };
@@ -113,5 +112,7 @@ const getCategoryItems = async (req, res) => {
 module.exports = {
     getCategories,
     getCategory,
-    getCategoryItems
+    getCategoryItems,
+    createCategory,
+    deleteCategory
 };

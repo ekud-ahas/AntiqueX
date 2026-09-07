@@ -1,4 +1,7 @@
-const pool = require("../config/db");
+const bcrypt = require("bcrypt");
+const userModel = require("../models/userModel");
+const adminModel = require("../models/adminModel");
+const { generateToken } = require("../utils/jwt");
 
 const register = async (req, res) => {
     try {
@@ -10,35 +13,61 @@ const register = async (req, res) => {
             });
         }
 
-        const existingUser = await pool.query(
-            "SELECT user_id FROM users WHERE username = $1 OR email = $2",
-            [username, email]
-        );
+        if (password.length < 6) {
+            return res.status(400).json({
+                error: "Password must be at least 6 characters long"
+            });
+        }
 
-        if (existingUser.rows.length > 0) {
+        // Check if username or email already exists in users
+        const existingUser = await userModel.findByUsernameOrEmail(username, email);
+        if (existingUser) {
             return res.status(409).json({
                 error: "Username or email already exists"
             });
         }
 
-        const result = await pool.query(
-            `
-            INSERT INTO users
-            (username, full_name, email, password)
-            VALUES ($1, $2, $3, $4)
-            RETURNING user_id, username, full_name, email
-            `,
-            [username, full_name, email, password]
-        );
+        // Check if email already exists in admins
+        const existingAdmin = await adminModel.findByEmail(email);
+        if (existingAdmin) {
+            return res.status(409).json({
+                error: "Email is already registered"
+            });
+        }
+
+        // Salt and hash password with bcrypt
+        const saltRounds = 10;
+        const passwordHash = await bcrypt.hash(password, saltRounds);
+
+        const newUser = await userModel.createUser({
+            username,
+            full_name,
+            email,
+            passwordHash
+        });
+
+        // Issue signed JWT token
+        const token = generateToken({
+            userId: newUser.user_id,
+            username: newUser.username,
+            email: newUser.email,
+            role: "customer"
+        });
 
         res.status(201).json({
             message: "Registration successful",
-            user: result.rows[0]
+            token,
+            user: {
+                user_id: newUser.user_id,
+                username: newUser.username,
+                full_name: newUser.full_name,
+                email: newUser.email,
+                role: "customer"
+            }
         });
 
     } catch (error) {
-        console.error(error);
-
+        console.error("REGISTER ERROR:", error);
         res.status(500).json({
             error: "Registration failed"
         });
@@ -55,36 +84,108 @@ const login = async (req, res) => {
             });
         }
 
-        const result = await pool.query(
-            `
-            SELECT user_id, username, full_name, email
-            FROM users
-            WHERE email = $1 AND password = $2
-            `,
-            [email, password]
-        );
+        // 1. Try finding regular user first
+        const user = await userModel.findByEmail(email);
 
-        if (result.rows.length === 0) {
-            return res.status(401).json({
-                error: "Invalid email or password"
+        if (user) {
+            const isMatch = await bcrypt.compare(password, user.password);
+
+            if (!isMatch) {
+                return res.status(401).json({
+                    error: "Invalid email or password"
+                });
+            }
+
+            if (user.status === "suspended") {
+                return res.status(403).json({
+                    error: "Your account has been suspended by an administrator."
+                });
+            }
+
+            const token = generateToken({
+                userId: user.user_id,
+                username: user.username,
+                email: user.email,
+                role: "customer"
+            });
+
+            return res.json({
+                message: "Login successful",
+                token,
+                user: {
+                    user_id: user.user_id,
+                    username: user.username,
+                    full_name: user.full_name,
+                    email: user.email,
+                    role: "customer"
+                }
             });
         }
 
-        res.json({
-            message: "Login successful",
-            user: result.rows[0]
+        // 2. If not found in users, check admins table
+        const admin = await adminModel.findByEmail(email);
+
+        if (admin) {
+            const isMatch = await bcrypt.compare(password, admin.password);
+
+            if (!isMatch) {
+                return res.status(401).json({
+                    error: "Invalid email or password"
+                });
+            }
+
+            const adminRole = admin.role || "admin";
+            const token = generateToken({
+                userId: admin.admin_id,
+                username: admin.username,
+                email: admin.email,
+                role: adminRole,
+                isAdmin: true
+            });
+
+            return res.json({
+                message: "Admin login successful",
+                token,
+                user: {
+                    user_id: admin.admin_id,
+                    username: admin.username,
+                    email: admin.email,
+                    role: adminRole,
+                    isAdmin: true
+                }
+            });
+        }
+
+        // 3. User not found anywhere
+        return res.status(401).json({
+            error: "Invalid email or password"
         });
 
     } catch (error) {
-        console.error(error);
-
+        console.error("LOGIN ERROR:", error);
         res.status(500).json({
             error: "Login failed"
         });
     }
 };
 
+// Logout endpoint
+const logout = async (req, res) => {
+    res.json({
+        message: "Logged out successfully"
+    });
+};
+
+// Get authenticated user profile
+const me = async (req, res) => {
+    res.json({
+        user: req.user
+    });
+};
+
 module.exports = {
     register,
-    login
+    login,
+    logout,
+    me
 };

@@ -49,11 +49,17 @@ function Register() {
         return;
       }
 
+      if (data.token) {
+        localStorage.setItem("token", data.token);
+      }
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
       setIsError(false);
-      setMessage("Registration successful! Redirecting to login…");
+      setMessage("Registration successful! Redirecting…");
 
       setTimeout(() => {
-        navigate("/login");
+        navigate("/items");
       }, 1000);
     } catch {
       setIsError(true);

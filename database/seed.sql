@@ -5,16 +5,16 @@
 
 -- 1. ADMINS
 INSERT INTO admins (username, email, password, role) VALUES
-('admin', 'admin@antiquex.com', '$2b$10$wOaUj5x9b3vK2eQ9qZ7Ype7XjJqC8vL7tW6uR5eT4yU3iO2pA1sD', 'super_admin'),
-('moderator_sarah', 'sarah.mod@antiquex.com', '$2b$10$wOaUj5x9b3vK2eQ9qZ7Ype7XjJqC8vL7tW6uR5eT4yU3iO2pA1sD', 'moderator');
+('admin', 'admin@antiquex.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e', 'super_admin'),
+('moderator_sarah', 'sarah.mod@antiquex.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e', 'moderator');
 
 -- 2. USERS (Default password: 'password123')
 INSERT INTO users (username, full_name, email, password) VALUES
-('john_smith', 'John Smith', 'john@example.com', '$2b$10$wOaUj5x9b3vK2eQ9qZ7Ype7XjJqC8vL7tW6uR5eT4yU3iO2pA1sD'),
-('emma_wilson', 'Emma Wilson', 'emma@example.com', '$2b$10$wOaUj5x9b3vK2eQ9qZ7Ype7XjJqC8vL7tW6uR5eT4yU3iO2pA1sD'),
-('michael_brown', 'Michael Brown', 'michael@example.com', '$2b$10$wOaUj5x9b3vK2eQ9qZ7Ype7XjJqC8vL7tW6uR5eT4yU3iO2pA1sD'),
-('sophia_davis', 'Sophia Davis', 'sophia@example.com', '$2b$10$wOaUj5x9b3vK2eQ9qZ7Ype7XjJqC8vL7tW6uR5eT4yU3iO2pA1sD'),
-('william_jones', 'William Jones', 'william@example.com', '$2b$10$wOaUj5x9b3vK2eQ9qZ7Ype7XjJqC8vL7tW6uR5eT4yU3iO2pA1sD');
+('john_smith', 'John Smith', 'john@example.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e'),
+('emma_wilson', 'Emma Wilson', 'emma@example.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e'),
+('michael_brown', 'Michael Brown', 'michael@example.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e'),
+('sophia_davis', 'Sophia Davis', 'sophia@example.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e'),
+('william_jones', 'William Jones', 'william@example.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e');
 
 -- 3. CATEGORIES (Admin manages Categories)
 INSERT INTO categories (admin_id, category_name, description) VALUES
@@ -66,11 +66,11 @@ INSERT INTO item_images (item_id, img_url) VALUES
 
 -- 9. AUCTIONS (Item opens Auction)
 INSERT INTO auctions (item_id, start_time, end_time, min_increment, status) VALUES
-(1, '2026-08-01 10:00:00', '2026-08-05 22:00:00', 1000.00, 'ended'),
-(2, '2026-08-10 10:00:00', '2026-08-20 22:00:00', 2500.00, 'ended'),
-(3, '2026-08-20 10:00:00', '2026-08-30 22:00:00', 1500.00, 'active'),
-(4, '2026-08-22 10:00:00', '2026-09-02 22:00:00', 2000.00, 'active'),
-(5, '2026-09-01 10:00:00', '2026-09-15 22:00:00', 1000.00, 'scheduled');
+(1, CURRENT_TIMESTAMP - INTERVAL '7 days', CURRENT_TIMESTAMP - INTERVAL '2 days', 1000.00, 'ended'),
+(2, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '1 day', 2500.00, 'ended'),
+(3, CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP + INTERVAL '3 days', 1500.00, 'active'),
+(4, CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP + INTERVAL '5 days', 2000.00, 'active'),
+(5, CURRENT_TIMESTAMP - INTERVAL '6 hours', CURRENT_TIMESTAMP + INTERVAL '7 days', 1000.00, 'active');
 
 -- 10. AUTO-BIDS (User allows Auto-Bid)
 INSERT INTO auto_bids (user_id, increment, max_amount) VALUES
@@ -80,14 +80,14 @@ INSERT INTO auto_bids (user_id, increment, max_amount) VALUES
 
 -- 11. BIDS (User submits Bid; Auto-Bid places Bid; Auction collects Bid)
 INSERT INTO bids (auction_id, bidder_id, auto_bid_id, bid_amount, bid_time) VALUES
-(1, 2, NULL, 16000.00, '2026-08-02 11:00:00'),
-(1, 3, NULL, 17000.00, '2026-08-03 14:30:00'),
-(1, 4, 1, 18000.00, '2026-08-04 18:00:00'),
-(2, 1, NULL, 47500.00, '2026-08-12 12:00:00'),
-(2, 5, 2, 50000.00, '2026-08-15 16:45:00'),
-(3, 2, NULL, 31500.00, '2026-08-21 09:15:00'),
-(3, 1, 3, 33000.00, '2026-08-22 10:30:00'),
-(4, 2, NULL, 52000.00, '2026-08-23 15:00:00');
+(1, 2, NULL, 16000.00, CURRENT_TIMESTAMP - INTERVAL '6 days'),
+(1, 3, NULL, 17000.00, CURRENT_TIMESTAMP - INTERVAL '5 days'),
+(1, 4, 1, 18000.00, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+(2, 1, NULL, 47500.00, CURRENT_TIMESTAMP - INTERVAL '4 days'),
+(2, 5, 2, 50000.00, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+(3, 2, NULL, 31500.00, CURRENT_TIMESTAMP - INTERVAL '1 day'),
+(3, 1, 3, 33000.00, CURRENT_TIMESTAMP - INTERVAL '12 hours'),
+(4, 2, NULL, 52000.00, CURRENT_TIMESTAMP - INTERVAL '4 hours');
 
 -- Link winning bids to ended auctions
 UPDATE auctions SET winner_bid_id = 3 WHERE auction_id = 1;
@@ -95,44 +95,44 @@ UPDATE auctions SET winner_bid_id = 5 WHERE auction_id = 2;
 
 -- 12. TRANSACTIONS (Auction closes Transaction)
 INSERT INTO transactions (auction_id, winner_bid_id, amount, payment_status, date) VALUES
-(1, 3, 18000.00, 'completed', '2026-08-05 22:05:00'),
-(2, 5, 50000.00, 'completed', '2026-08-20 22:05:00');
+(1, 3, 18000.00, 'completed', CURRENT_TIMESTAMP - INTERVAL '2 days'),
+(2, 5, 50000.00, 'completed', CURRENT_TIMESTAMP - INTERVAL '1 day');
 
 -- 13. WALLET TRANSACTIONS (Wallet logs transactions; Transaction credits 1:1)
 INSERT INTO wallet_transactions (wallet_id, bid_id, txn_id, payment_method_id, type, amount, time) VALUES
-(1, NULL, NULL, NULL, 'deposit', 150000.00, '2026-08-01 09:00:00'),
-(2, NULL, NULL, NULL, 'deposit', 75000.00, '2026-08-01 09:15:00'),
-(3, NULL, NULL, NULL, 'deposit', 120000.00, '2026-08-01 09:30:00'),
-(4, NULL, NULL, NULL, 'deposit', 95000.00, '2026-08-01 09:45:00'),
-(5, NULL, NULL, NULL, 'deposit', 200000.00, '2026-08-01 10:00:00'),
-(1, 3, 1, 4, 'sale_proceeds', 18000.00, '2026-08-05 22:10:00'),
-(2, 5, 2, 5, 'sale_proceeds', 50000.00, '2026-08-20 22:10:00');
+(1, NULL, NULL, NULL, 'deposit', 150000.00, CURRENT_TIMESTAMP - INTERVAL '7 days'),
+(2, NULL, NULL, NULL, 'deposit', 75000.00, CURRENT_TIMESTAMP - INTERVAL '7 days'),
+(3, NULL, NULL, NULL, 'deposit', 120000.00, CURRENT_TIMESTAMP - INTERVAL '7 days'),
+(4, NULL, NULL, NULL, 'deposit', 95000.00, CURRENT_TIMESTAMP - INTERVAL '7 days'),
+(5, NULL, NULL, NULL, 'deposit', 200000.00, CURRENT_TIMESTAMP - INTERVAL '7 days'),
+(1, 3, 1, 4, 'sale_proceeds', 18000.00, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+(2, 5, 2, 5, 'sale_proceeds', 50000.00, CURRENT_TIMESTAMP - INTERVAL '1 day');
 
 -- 14. SHIPMENTS (Transaction dispatches Shipment)
 INSERT INTO shipments (txn_id, address_id, carrier, tracking_number, shipping_date, deliver_date, status) VALUES
-(1, 4, 'DHL Express', 'DHL-8921-9901', '2026-08-06 10:00:00', '2026-08-09 14:30:00', 'delivered'),
-(2, 5, 'FedEx Priority', 'FDX-7731-4412', '2026-08-21 11:30:00', NULL, 'in_transit');
+(1, 4, 'DHL Express', 'DHL-8921-9901', CURRENT_TIMESTAMP - INTERVAL '36 hours', CURRENT_TIMESTAMP - INTERVAL '12 hours', 'delivered'),
+(2, 5, 'FedEx Priority', 'FDX-7731-4412', CURRENT_TIMESTAMP - INTERVAL '18 hours', NULL, 'in_transit');
 
 -- 15. REVIEWS (User leaves / earns Review for a Transaction)
 INSERT INTO reviews (txn_id, reviewer_id, reviewee_id, comment, rating, date) VALUES
-(1, 4, 1, 'The Sussex Chair arrived in pristine condition, very well packaged!', 5, '2026-08-10 16:00:00'),
-(1, 1, 4, 'Prompt payment, courteous buyer. Excellent transaction!', 5, '2026-08-10 17:30:00');
+(1, 4, 1, 'The Sussex Chair arrived in pristine condition, very well packaged!', 5, CURRENT_TIMESTAMP - INTERVAL '10 hours'),
+(1, 1, 4, 'Prompt payment, courteous buyer. Excellent transaction!', 5, CURRENT_TIMESTAMP - INTERVAL '8 hours');
 
 -- 16. DISPUTES (Dispute on Shipment; resolved by Admin)
 INSERT INTO disputes (shipment_id, raised_by, resolved_by, status, date, reason) VALUES
-(2, 5, 1, 'resolved', '2026-08-22 09:00:00', 'Inquired regarding tracking update delay on international transit. Admin verified courier customs clearance.');
+(2, 5, 1, 'resolved', CURRENT_TIMESTAMP - INTERVAL '20 hours', 'Inquired regarding tracking update delay on international transit. Admin verified courier customs clearance.');
 
 -- 17. NOTIFICATIONS (User receives Notifications)
 INSERT INTO notifications (user_id, type, message, created_at, is_read) VALUES
-(4, 'auction_win', 'Congratulations! You won the auction for Sussex Chair, Late 19th Century.', '2026-08-05 22:05:00', TRUE),
-(1, 'item_sold', 'Your item "Sussex Chair" was sold for 18,000 BDT.', '2026-08-05 22:05:00', TRUE),
-(5, 'outbid_alert', 'You were outbid on 19th Century Antique Gold & Emerald Necklace.', '2026-08-22 10:30:00', FALSE),
-(2, 'payment_received', 'Payment of 50,000 BDT received for European Landscape Oil Painting.', '2026-08-20 22:10:00', TRUE);
+(4, 'auction_win', 'Congratulations! You won the auction for Sussex Chair, Late 19th Century.', CURRENT_TIMESTAMP - INTERVAL '2 days', TRUE),
+(1, 'item_sold', 'Your item "Sussex Chair" was sold for 18,000 BDT.', CURRENT_TIMESTAMP - INTERVAL '2 days', TRUE),
+(5, 'outbid_alert', 'You were outbid on 19th Century Antique Gold & Emerald Necklace.', CURRENT_TIMESTAMP - INTERVAL '12 hours', FALSE),
+(2, 'payment_received', 'Payment of 50,000 BDT received for European Landscape Oil Painting.', CURRENT_TIMESTAMP - INTERVAL '1 day', TRUE);
 
 -- 18. WATCHLIST (User tracks Items in Watchlist)
 INSERT INTO watchlist (user_id, item_id, date) VALUES
-(1, 4, '2026-08-22 11:00:00'),
-(2, 1, '2026-08-02 08:30:00'),
-(3, 1, '2026-08-02 09:00:00'),
-(4, 2, '2026-08-11 14:00:00'),
-(5, 3, '2026-08-20 18:00:00');
+(1, 4, CURRENT_TIMESTAMP - INTERVAL '1 day'),
+(2, 1, CURRENT_TIMESTAMP - INTERVAL '6 days'),
+(3, 1, CURRENT_TIMESTAMP - INTERVAL '5 days'),
+(4, 2, CURRENT_TIMESTAMP - INTERVAL '4 days'),
+(5, 3, CURRENT_TIMESTAMP - INTERVAL '2 days');

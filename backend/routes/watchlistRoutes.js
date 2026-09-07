@@ -1,5 +1,4 @@
 const express = require("express");
-
 const router = express.Router();
 
 const {
@@ -7,9 +6,11 @@ const {
     addToWatchlist,
     removeFromWatchlist
 } = require("../controllers/watchlistController");
+const { authenticateToken } = require("../middleware/authMiddleware");
 
-router.get("/:userId", getUserWatchlist);
-router.post("/", addToWatchlist);
-router.delete("/", removeFromWatchlist);
+// All watchlist routes require authentication
+router.get("/:userId", authenticateToken, getUserWatchlist);
+router.post("/", authenticateToken, addToWatchlist);
+router.delete("/", authenticateToken, removeFromWatchlist);
 
 module.exports = router;

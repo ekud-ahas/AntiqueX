@@ -4,7 +4,8 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     full_name VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
-    password TEXT NOT NULL
+    password TEXT NOT NULL,
+    status VARCHAR(20) NOT NULL DEFAULT 'active'
 );
 
 -- 2. ADMINS
@@ -52,6 +53,7 @@ CREATE TABLE wallets (
 -- 7. ITEMS
 CREATE TABLE items (
     item_id SERIAL PRIMARY KEY,
+    item_uuid UUID NOT NULL DEFAULT gen_random_uuid() UNIQUE,
     seller_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     category_id INT NOT NULL REFERENCES categories(category_id) ON DELETE RESTRICT,
     title VARCHAR(200) NOT NULL,

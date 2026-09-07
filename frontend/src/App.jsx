@@ -14,6 +14,7 @@ import MyItems from "./pages/MyItems";
 import EditItem from "./pages/EditItem";
 import Wallet from "./pages/Wallet";
 import Purchases from "./pages/Purchases";
+import AdminDashboard from "./pages/AdminDashboard";
 
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
         <Route path="/my-items/:id/edit" element={<EditItem />} />
         <Route path="/wallet" element={<Wallet />} />
         <Route path="/purchases" element={<Purchases />} />
+        <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
   );

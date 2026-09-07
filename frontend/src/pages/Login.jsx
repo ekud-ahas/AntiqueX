@@ -35,6 +35,9 @@ function Login() {
                 return;
             }
 
+            if (data.token) {
+                localStorage.setItem("token", data.token);
+            }
             localStorage.setItem("user", JSON.stringify(data.user));
             setIsError(false);
             setMessage("Login successful! Redirecting…");
