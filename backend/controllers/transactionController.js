@@ -32,7 +32,7 @@ const getTransactionById = async (req, res) => {
         }
 
         const currentUserId = req.user ? req.user.userId : null;
-        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "super_admin" || req.user.role === "moderator");
+        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 
         // Object ownership check
         if (currentUserId && !isAdmin) {
@@ -57,7 +57,7 @@ const getUserTransactions = async (req, res) => {
     try {
         const { userId } = req.params;
         const currentUserId = req.user ? req.user.userId : null;
-        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "super_admin" || req.user.role === "moderator");
+        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 
         // Object ownership check
         if (currentUserId && Number(currentUserId) !== Number(userId) && !isAdmin) {

@@ -4,13 +4,14 @@ import "./AdminDashboard.css";
 
 function AdminDashboard() {
     const user = JSON.parse(localStorage.getItem("user"));
-    const isAdmin =
-        user &&
-        (user.role === "admin" ||
-            user.role === "super_admin" ||
-            user.role === "moderator");
+    const token = localStorage.getItem("token");
 
-    const [activeTab, setActiveTab] = useState("overview"); // "overview" | "users" | "items"
+    // Two admin roles: 'admin' (full control) | 'moderator' (items/auctions only)
+    const isAdmin     = user && (user.role === "admin" || user.role === "moderator");
+    const isFullAdmin = user && user.role === "admin"; // can manage users & categories
+
+    // Tabs: overview (both roles) | users (admin only) | items (both roles)
+    const [activeTab, setActiveTab] = useState("overview");
 
     // Data states
     const [stats, setStats] = useState(null);
@@ -22,6 +23,9 @@ function AdminDashboard() {
     const [actionMsg, setActionMsg] = useState("");
     const [actionLoading, setActionLoading] = useState(false);
 
+    // Auth header used by every API call
+    const authHeader = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
+
     useEffect(() => {
         if (!user || !isAdmin) return;
         fetchAllAdminData();
@@ -30,20 +34,27 @@ function AdminDashboard() {
     const fetchAllAdminData = async () => {
         setLoading(true);
         try {
-            const [statsRes, usersRes, itemsRes] = await Promise.all([
-                fetch("http://localhost:5000/api/admin/stats"),
-                fetch("http://localhost:5000/api/admin/users"),
-                fetch("http://localhost:5000/api/admin/items")
-            ]);
+            // Stats and items are available to both roles
+            const requests = [
+                fetch("http://localhost:5000/api/admin/stats", { headers: authHeader }),
+                fetch("http://localhost:5000/api/admin/items",  { headers: authHeader })
+            ];
+            // Users endpoint is admin-only — don't fetch for moderators
+            if (isFullAdmin) {
+                requests.push(fetch("http://localhost:5000/api/admin/users", { headers: authHeader }));
+            }
+
+            const [statsRes, itemsRes, usersRes] = await Promise.all(requests);
 
             if (!statsRes.ok) throw new Error("Failed to load platform stats");
+
             const statsData = await statsRes.json();
-            const usersData = usersRes.ok ? await usersRes.json() : [];
             const itemsData = itemsRes.ok ? await itemsRes.json() : [];
+            const usersData = (isFullAdmin && usersRes?.ok) ? await usersRes.json() : [];
 
             setStats(statsData);
-            setUsersList(usersData);
             setItemsList(itemsData);
+            setUsersList(usersData);
             setLoading(false);
         } catch (err) {
             setError(err.message);
@@ -51,7 +62,7 @@ function AdminDashboard() {
         }
     };
 
-    // User status toggle handler
+    // User status toggle handler (admin only)
     const handleToggleUserStatus = async (targetUser) => {
         const newStatus = targetUser.status === "active" ? "suspended" : "active";
         const confirmMsg =
@@ -66,7 +77,7 @@ function AdminDashboard() {
         try {
             const res = await fetch(`http://localhost:5000/api/admin/users/${targetUser.user_id}/status`, {
                 method: "PATCH",
-                headers: { "Content-Type": "application/json" },
+                headers: authHeader,
                 body: JSON.stringify({ status: newStatus })
             });
             const data = await res.json();
@@ -99,7 +110,7 @@ function AdminDashboard() {
         try {
             const res = await fetch(`http://localhost:5000/api/admin/auctions/${item.auction_id}/status`, {
                 method: "PATCH",
-                headers: { "Content-Type": "application/json" },
+                headers: authHeader,
                 body: JSON.stringify({ status: newStatus })
             });
             const data = await res.json();
@@ -149,14 +160,24 @@ function AdminDashboard() {
                     <h1>⚙️ Administrative Control Panel</h1>
                     <p className="admin-subtitle">
                         Logged in as <strong>{user.username}</strong>{" "}
-                        <span className="role-badge">{user.role.replace("_", " ").toUpperCase()}</span>
+                        <span className={`role-badge ${!isFullAdmin ? "role-badge-moderator" : ""}`}>
+                            {user.role.toUpperCase()}
+                        </span>
+                        {!isFullAdmin && (
+                            <span style={{ marginLeft: "8px", fontSize: "0.82rem", color: "#888" }}>
+                                — Moderation access only
+                            </span>
+                        )}
                     </p>
                 </div>
-                <div className="admin-header-actions">
-                    <Link to="/categories" className="action-btn">
-                        🗂️ Manage Categories
-                    </Link>
-                </div>
+                {/* Manage Categories button only shown to full admins */}
+                {isFullAdmin && (
+                    <div className="admin-header-actions">
+                        <Link to="/categories" className="action-btn">
+                            🗂️ Manage Categories
+                        </Link>
+                    </div>
+                )}
             </div>
 
             {/* Notification Banner */}
@@ -167,7 +188,7 @@ function AdminDashboard() {
                 </div>
             )}
 
-            {/* Tab Navigation */}
+            {/* Tab Navigation — Users tab hidden from moderators */}
             <div className="admin-tabs">
                 <button
                     className={`tab-btn ${activeTab === "overview" ? "active" : ""}`}
@@ -175,12 +196,14 @@ function AdminDashboard() {
                 >
                     📊 Overview & Stats
                 </button>
-                <button
-                    className={`tab-btn ${activeTab === "users" ? "active" : ""}`}
-                    onClick={() => setActiveTab("users")}
-                >
-                    👥 User Directory ({usersList.length})
-                </button>
+                {isFullAdmin && (
+                    <button
+                        className={`tab-btn ${activeTab === "users" ? "active" : ""}`}
+                        onClick={() => setActiveTab("users")}
+                    >
+                        👥 User Directory ({usersList.length})
+                    </button>
+                )}
                 <button
                     className={`tab-btn ${activeTab === "items" ? "active" : ""}`}
                     onClick={() => setActiveTab("items")}

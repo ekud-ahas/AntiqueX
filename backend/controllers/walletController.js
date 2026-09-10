@@ -5,7 +5,7 @@ const getWallet = async (req, res) => {
     try {
         const { userId } = req.params;
         const currentUserId = req.user.userId;
-        const isAdmin = req.user.role === "admin" || req.user.role === "super_admin" || req.user.role === "moderator";
+        const isAdmin = req.user.role === "admin" || req.user.role === "moderator";
 
         // Object-level ownership check (Section 3.2 item 3)
         if (Number(currentUserId) !== Number(userId) && !isAdmin) {

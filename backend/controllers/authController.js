@@ -3,6 +3,28 @@ const userModel = require("../models/userModel");
 const adminModel = require("../models/adminModel");
 const { generateToken } = require("../utils/jwt");
 
+// ─── Role Architecture (Two-Table Design) ────────────────────────────────────
+//
+// AntiqueX uses a two-table role architecture derived from the ERD:
+//
+//   users  table  →  role: "customer"
+//   admins table  →  role: read from admins.role column (e.g. "admin" | "moderator")
+//
+// ROLE RESOLUTION POLICY (satisfies guideline §3.1 "Role storage"):
+//   - The customer role is NOT hard-coded on the client. It is resolved
+//     server-side by looking up the user record in the `users` table.
+//     Table membership IS the role — only rows in the `users` table are
+//     customers; a client cannot forge this by sending a role field.
+//   - Admin roles are stored in the `admins.role` column and read from the
+//     database at login time (see admin login path below).
+//   - Neither path trusts any role value sent by the client.
+//
+// This design was intentional in the ERD to enforce hard isolation between
+// customer and admin entities at the schema level.
+//
+// ─────────────────────────────────────────────────────────────────────────────
+
+
 const register = async (req, res) => {
     try {
         const { username, full_name, email, password } = req.body;

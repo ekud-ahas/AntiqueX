@@ -4,8 +4,10 @@
 -- =============================================================================
 
 -- 1. ADMINS
+-- Default password for all accounts: 'password123'
+-- Roles: 'admin' (full control) | 'moderator' (items/auctions only)
 INSERT INTO admins (username, email, password, role) VALUES
-('admin', 'admin@antiquex.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e', 'super_admin'),
+('admin', 'admin@antiquex.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e', 'admin'),
 ('moderator_sarah', 'sarah.mod@antiquex.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e', 'moderator');
 
 -- 2. USERS (Default password: 'password123')

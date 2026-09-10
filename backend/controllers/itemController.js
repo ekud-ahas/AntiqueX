@@ -119,7 +119,7 @@ const updateItem = async (req, res) => {
         } = req.body;
 
         const userId = req.user ? req.user.userId : req.body.seller_id;
-        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "super_admin" || req.user.role === "moderator");
+        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 
         if (!userId) {
             return res.status(401).json({
@@ -172,7 +172,7 @@ const deleteItem = async (req, res) => {
     try {
         const { id } = req.params;
         const userId = req.user ? req.user.userId : req.body.seller_id;
-        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "super_admin" || req.user.role === "moderator");
+        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 
         if (!userId) {
             return res.status(401).json({
@@ -217,7 +217,7 @@ const addItemImage = async (req, res) => {
         const { id } = req.params;
         const { img_url } = req.body;
         const userId = req.user ? req.user.userId : req.body.seller_id;
-        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "super_admin" || req.user.role === "moderator");
+        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 
         if (!img_url) {
             return res.status(400).json({
@@ -274,7 +274,7 @@ const deleteItemImage = async (req, res) => {
     try {
         const { id, imgId } = req.params;
         const userId = req.user ? req.user.userId : req.body.seller_id;
-        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "super_admin" || req.user.role === "moderator");
+        const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 
         const existingSellerId = await itemModel.getItemSellerId(id);
         if (existingSellerId === null) {

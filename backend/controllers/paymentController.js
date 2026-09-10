@@ -5,7 +5,7 @@ const getUserPaymentMethods = async (req, res) => {
     try {
         const { userId } = req.params;
         const currentUserId = req.user.userId;
-        const isAdmin = req.user.role === "admin" || req.user.role === "super_admin" || req.user.role === "moderator";
+        const isAdmin = req.user.role === "admin" || req.user.role === "moderator";
 
         // Object ownership check
         if (Number(currentUserId) !== Number(userId) && !isAdmin) {

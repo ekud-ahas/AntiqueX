@@ -3,7 +3,8 @@ import "./Navbar.css";
 
 function Navbar() {
     const user = JSON.parse(localStorage.getItem("user"));
-    const isAdmin = user && (user.role === "admin" || user.role === "super_admin" || user.role === "moderator");
+    const isAdmin = user && (user.role === "admin" || user.role === "moderator");
+    const isFullAdmin = user && user.role === "admin"; // full admin only
 
     const handleLogout = async () => {
         try {
@@ -43,11 +44,14 @@ function Navbar() {
                         </>
                     )}
 
-                    {/* Admin-only Links */}
+                    {/* Admin / Moderator Links */}
                     {isAdmin && (
                         <>
                             <NavLink to="/admin" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Dashboard</NavLink>
-                            <NavLink to="/categories" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Categories</NavLink>
+                            {/* Categories management is admin-only; moderators cannot create/delete categories */}
+                            {isFullAdmin && (
+                                <NavLink to="/categories" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Categories</NavLink>
+                            )}
                         </>
                     )}
                 </div>
@@ -61,7 +65,7 @@ function Navbar() {
                                     fontSize: "0.72rem",
                                     padding: "2px 7px",
                                     borderRadius: "10px",
-                                    background: isAdmin ? "#d35400" : "#2980b9",
+                                    background: isFullAdmin ? "#d35400" : isAdmin ? "#16a085" : "#2980b9",
                                     color: "#fff",
                                     fontWeight: "bold",
                                     textTransform: "uppercase",

@@ -52,6 +52,11 @@
     vertical-align: middle;
 }
 
+/* Moderator gets a distinct teal badge — visually different from admin orange */
+.role-badge-moderator {
+    background: #16a085;
+}
+
 /* ── Alert Banner ────────────────────────── */
 .admin-alert-banner {
     display: flex;
