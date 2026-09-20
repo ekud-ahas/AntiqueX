@@ -41,8 +41,8 @@ function Wallet() {
         if (!user) return;
         try {
             const [walletRes, methodsRes] = await Promise.all([
-                authFetch(`http://localhost:5000/api/wallet/${user.user_id}`),
-                authFetch(`http://localhost:5000/api/payments/methods/${user.user_id}`)
+                authFetch(`/api/wallet/${user.user_id}`),
+                authFetch(`/api/payments/methods/${user.user_id}`)
             ]);
 
             const walletData = await walletRes.json();
@@ -78,7 +78,7 @@ function Wallet() {
 
         setActionLoading(true);
         try {
-            const res = await authFetch("http://localhost:5000/api/wallet/deposit", {
+            const res = await authFetch("/api/wallet/deposit", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -126,7 +126,7 @@ function Wallet() {
 
         setActionLoading(true);
         try {
-            const res = await authFetch("http://localhost:5000/api/wallet/withdraw", {
+            const res = await authFetch("/api/wallet/withdraw", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -156,7 +156,7 @@ function Wallet() {
 
         setActionLoading(true);
         try {
-            const res = await authFetch("http://localhost:5000/api/payments/methods", {
+            const res = await authFetch("/api/payments/methods", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -181,7 +181,7 @@ function Wallet() {
 
     const handleDeleteMethod = async (methodId) => {
         try {
-            const res = await authFetch(`http://localhost:5000/api/payments/methods/${methodId}`, {
+            const res = await authFetch(`/api/payments/methods/${methodId}`, {
                 method: "DELETE",
             });
 

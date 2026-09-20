@@ -15,7 +15,7 @@ function request(method, path, body = null, headers = {}) {
 
         const req = http.request({
             hostname: "localhost",
-            port: 5000,
+            port: process.env.PORT || 5001,
             path,
             method,
             headers: reqHeaders
@@ -127,6 +127,9 @@ async function runTests() {
             "Admin calling customer-only wallet deposit is blocked with 403 Forbidden",
             `Status: ${crossRoleRes.status}, Body: ${JSON.stringify(crossRoleRes.data)}`
         );
+
+        // Wait 1.1s so JWT iat timestamp advances past the revoked token's 1-second window
+        await new Promise((r) => setTimeout(r, 1100));
 
         // Login new active customer session for further tests
         const reloginRes = await request("POST", "/api/auth/login", {

@@ -24,7 +24,8 @@ async function main() {
   console.log('USER 7 SUSPENDED IN DB');
 
   // 2. Try placing a bid with suspended user's token
-  const bidRes = await fetch('http://localhost:5000/api/auctions/3/bids', {
+  const port = process.env.PORT || 5001;
+  const bidRes = await fetch(`http://localhost:${port}/api/auctions/3/bids`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + userToken },
     body: JSON.stringify({ bid_amount: 50000 })

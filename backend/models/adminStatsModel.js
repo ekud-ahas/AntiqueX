@@ -142,39 +142,46 @@ const cancelAuctionAndRefundEscrow = async (auctionId) => {
             error.statusCode = 400;
             throw error;
         }
-        const bidsResult = await client.query(
+        // Under Option A Escrow Pre-Funded Bidding, previous outbid bidders were
+        // already refunded immediately upon being outbid. Therefore, only the
+        // current leading (highest) bidder has funds locked in escrow.
+        const topBidResult = await client.query(
             `SELECT bid_id, bidder_id, bid_amount
              FROM bids
              WHERE auction_id = $1
-             ORDER BY bid_id`,
+             ORDER BY bid_amount DESC, bid_time ASC
+             LIMIT 1`,
             [auctionId]
         );
+        const topBid = topBidResult.rows[0];
 
-        for (const bid of bidsResult.rows) {
+        if (topBid) {
             const walletResult = await client.query(
                 `SELECT wallet_id FROM wallets WHERE user_id = $1 FOR UPDATE`,
-                [bid.bidder_id]
+                [topBid.bidder_id]
             );
             const wallet = walletResult.rows[0];
             if (!wallet) {
                 throw new Error("Bidder wallet is missing; cancellation could not be settled safely.");
             }
 
+            const refundAmount = Number(topBid.bid_amount);
+
             await client.query(
                 `UPDATE wallets SET balance = balance + $1 WHERE wallet_id = $2`,
-                [bid.bid_amount, wallet.wallet_id]
+                [refundAmount, wallet.wallet_id]
             );
             await client.query(
                 `INSERT INTO wallet_transactions (wallet_id, bid_id, type, amount)
                  VALUES ($1, $2, 'auction_cancel_refund', $3)`,
-                [wallet.wallet_id, bid.bid_id, bid.bid_amount]
+                [wallet.wallet_id, topBid.bid_id, refundAmount]
             );
             await client.query(
                 `INSERT INTO notifications (user_id, type, message)
                  VALUES ($1, 'auction_cancelled', $2)`,
                 [
-                    bid.bidder_id,
-                    `The auction for "${auction.title}" was cancelled. Your bid of BDT ${Number(bid.bid_amount).toLocaleString()} has been returned to your wallet.`
+                    topBid.bidder_id,
+                    `The auction for "${auction.title}" was cancelled. Your bid of BDT ${refundAmount.toLocaleString()} has been returned to your wallet.`
                 ]
             );
         }

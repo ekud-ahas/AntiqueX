@@ -1,4 +1,4 @@
-const { importMetItems } = require("./services/metImporter");
+const { importMetItems } = require("../services/metImporter");
 
 async function test() {
     try {

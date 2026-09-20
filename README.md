@@ -57,7 +57,7 @@ For quick and clean-state evaluation during viva/demonstration:
    ```
 2. Configure backend environment in `backend/.env`:
    ```env
-   PORT=5000
+   PORT=5001
    DB_USER=postgres
    DB_PASSWORD=your_postgres_password
    DB_HOST=localhost
@@ -76,7 +76,7 @@ For quick and clean-state evaluation during viva/demonstration:
 ```bash
 cd backend
 npm install
-npm run dev   # Starts Express server on http://localhost:5000
+npm run dev   # Starts Express server on http://localhost:5001
 ```
 
 ### 3. Frontend Setup
