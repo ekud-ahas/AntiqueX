@@ -1,14 +1,12 @@
 const walletModel = require("../models/walletModel");
+const { processMockGatewayTransaction } = require("../services/mockPaymentGateway");
 
-// Get or initialize user wallet and transaction history (Protected, User or Admin)
+// Get or initialize the authenticated customer's wallet and transaction history.
 const getWallet = async (req, res) => {
     try {
         const { userId } = req.params;
         const currentUserId = req.user.userId;
-        const isAdmin = req.user.role === "admin" || req.user.role === "moderator";
-
-        // Object-level ownership check (Section 3.2 item 3)
-        if (Number(currentUserId) !== Number(userId) && !isAdmin) {
+        if (Number(currentUserId) !== Number(userId)) {
             return res.status(403).json({
                 error: "Forbidden: You cannot access another user's wallet."
             });
@@ -27,22 +25,40 @@ const getWallet = async (req, res) => {
     }
 };
 
-// Deposit funds into wallet (Protected)
+// Deposit funds into wallet via Mock Gateway (Protected, Customer only)
 const depositFunds = async (req, res) => {
     try {
-        // Securely resolve user_id from token
-        const user_id = req.user ? req.user.userId : req.body.user_id;
-        const { amount } = req.body;
+        const user_id = req.user.userId;
+        const { amount, method = "bkash", accountNumber, pin } = req.body;
         const depositAmount = Number(amount);
 
         if (!user_id || isNaN(depositAmount) || depositAmount <= 0) {
             return res.status(400).json({ error: "Valid deposit amount (> 0) is required" });
         }
 
-        const result = await walletModel.depositFunds(user_id, depositAmount);
+        // Process through Mock Payment Gateway Server
+        const gatewayRes = await processMockGatewayTransaction({
+            amount: depositAmount,
+            method,
+            accountNumber,
+            pin,
+            userId: user_id
+        });
+
+        if (!gatewayRes.success) {
+            return res.status(gatewayRes.statusCode || 400).json({
+                error: gatewayRes.error || "Payment gateway authorization failed"
+            });
+        }
+
+        const result = await walletModel.depositFunds(user_id, depositAmount, {
+            gatewayTxnId: gatewayRes.gatewayTxnId,
+            provider: gatewayRes.provider
+        });
 
         res.status(200).json({
             message: "Deposit successful",
+            gateway: gatewayRes,
             wallet: result.wallet,
             transaction: result.transaction
         });
@@ -52,11 +68,10 @@ const depositFunds = async (req, res) => {
     }
 };
 
-// Withdraw funds from wallet (Protected)
+// Withdraw funds from wallet (Protected, Customer only)
 const withdrawFunds = async (req, res) => {
     try {
-        // Securely resolve user_id from token
-        const user_id = req.user ? req.user.userId : req.body.user_id;
+        const user_id = req.user.userId;
         const { amount } = req.body;
         const withdrawAmount = Number(amount);
 

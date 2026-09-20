@@ -34,20 +34,31 @@ INSERT INTO addresses (user_id, street, city, postal_code, district, division) V
 (4, '18 Main Street, Boalia', 'Rajshahi', '6000', 'Rajshahi', 'Rajshahi'),
 (5, '7 University Road, Zindabazar', 'Sylhet', '3100', 'Sylhet', 'Sylhet');
 
--- 5. PAYMENT METHODS (User stores Payment Method)
+-- 5. PAYMENT METHODS (User stores Payment Method — used only for wallet top-up deposits)
 INSERT INTO payment_methods (user_id, method_name) VALUES
-(1, 'Credit Card (Visa ****4242)'),
-(2, 'bKash / Mobile Banking'),
-(3, 'Debit Card (Mastercard ****8812)'),
-(4, 'Credit Card (Amex ****1005)'),
+(1, 'Visa Credit Card (****4242)'),
+(2, 'bKash Mobile Banking'),
+(3, 'Mastercard Debit Card (****8812)'),
+(4, 'Nagad Mobile Banking'),
 (5, 'Bank Wire Transfer');
 
 -- 6. WALLETS (User owns Wallet)
+-- Balances reflect net position AFTER escrow holds for active bids below:
+--   Auction 3 (Jewelry): User 2 bid 31,500 (held), User 1 bid 33,000 (held, outbid User 2 refunded 31,500)
+--   Auction 4 (Coins):   User 2 bid 52,000 (held)
+--   Auction 5 (Sculpture): No active bids from seed (clean start for demo)
+--   Ended auctions: User 4 won auction 1 (18,000 paid to User 1); User 5 won auction 2 (50,000 paid to User 2)
+-- Starting deposits: U1=200k, U2=200k, U3=120k, U4=100k, U5=200k
+-- U1: 200,000 + 18,000 (sale) - 33,000 (escrow hold auction 3) = 185,000
+-- U2: 200,000 + 50,000 (sale) - 52,000 (escrow hold auction 4) = 198,000
+-- U3: 120,000 (no active bids)
+-- U4: 100,000 - 18,000 (paid auction 1 winner) = 82,000
+-- U5: 200,000 - 50,000 (paid auction 2 winner) = 150,000
 INSERT INTO wallets (user_id, balance) VALUES
-(1, 168000.00),
-(2, 125000.00),
+(1, 185000.00),
+(2, 198000.00),
 (3, 120000.00),
-(4, 77000.00),
+(4,  82000.00),
 (5, 150000.00);
 
 -- 7. ITEMS (User lists Item; Category sorts Item)
@@ -67,12 +78,14 @@ INSERT INTO item_images (item_id, img_url) VALUES
 (5, 'https://commons.wikimedia.org/wiki/Special:Redirect/file/Roman%20Bronze%20Statuette%20of%20a%20Gladiator,%20100-200%20AD%20(10458504904).jpg');
 
 -- 9. AUCTIONS (Item opens Auction)
+-- Auctions 1 & 2: ended (historical, for transaction/review demo data)
+-- Auctions 3, 4, 5: currently active with generous end windows for live demo
 INSERT INTO auctions (item_id, start_time, end_time, min_increment, status) VALUES
 (1, CURRENT_TIMESTAMP - INTERVAL '7 days', CURRENT_TIMESTAMP - INTERVAL '2 days', 1000.00, 'ended'),
-(2, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '1 day', 2500.00, 'ended'),
-(3, CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP + INTERVAL '3 days', 1500.00, 'active'),
-(4, CURRENT_TIMESTAMP - INTERVAL '1 day', CURRENT_TIMESTAMP + INTERVAL '5 days', 2000.00, 'active'),
-(5, CURRENT_TIMESTAMP - INTERVAL '6 hours', CURRENT_TIMESTAMP + INTERVAL '7 days', 1000.00, 'active');
+(2, CURRENT_TIMESTAMP - INTERVAL '5 days', CURRENT_TIMESTAMP - INTERVAL '1 day',  2500.00, 'ended'),
+(3, CURRENT_TIMESTAMP - INTERVAL '2 days', CURRENT_TIMESTAMP + INTERVAL '5 days', 1500.00, 'active'),
+(4, CURRENT_TIMESTAMP - INTERVAL '1 day',  CURRENT_TIMESTAMP + INTERVAL '6 days', 2000.00, 'active'),
+(5, CURRENT_TIMESTAMP - INTERVAL '6 hours',CURRENT_TIMESTAMP + INTERVAL '7 days', 1000.00, 'active');
 
 -- 10. AUTO-BIDS (User allows Auto-Bid)
 INSERT INTO auto_bids (user_id, increment, max_amount) VALUES
@@ -80,15 +93,21 @@ INSERT INTO auto_bids (user_id, increment, max_amount) VALUES
 (5, 2500.00, 60000.00),
 (1, 1500.00, 40000.00);
 
--- 11. BIDS (User submits Bid; Auto-Bid places Bid; Auction collects Bid)
+-- 11. BIDS (User submits Bid; Auction collects Bid)
+-- Ended auctions: historical bids are fine as-is (escrow was settled at close)
+-- Active auctions: bids reflect escrow holds accounted for in wallet balances above
 INSERT INTO bids (auction_id, bidder_id, auto_bid_id, bid_amount, bid_time) VALUES
+-- Ended auction 1 bids (historical)
 (1, 2, NULL, 16000.00, CURRENT_TIMESTAMP - INTERVAL '6 days'),
 (1, 3, NULL, 17000.00, CURRENT_TIMESTAMP - INTERVAL '5 days'),
-(1, 4, 1, 18000.00, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+(1, 4, 1,   18000.00, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+-- Ended auction 2 bids (historical)
 (2, 1, NULL, 47500.00, CURRENT_TIMESTAMP - INTERVAL '4 days'),
-(2, 5, 2, 50000.00, CURRENT_TIMESTAMP - INTERVAL '2 days'),
-(3, 2, NULL, 31500.00, CURRENT_TIMESTAMP - INTERVAL '1 day'),
-(3, 1, 3, 33000.00, CURRENT_TIMESTAMP - INTERVAL '12 hours'),
+(2, 5, 2,   50000.00, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+-- Active auction 3 bids (Jewelry — User 2 outbid by User 1; only User 1's 33,000 held)
+(3, 2, NULL, 31500.00, CURRENT_TIMESTAMP - INTERVAL '20 hours'),
+(3, 1, 3,   33000.00, CURRENT_TIMESTAMP - INTERVAL '12 hours'),
+-- Active auction 4 bids (Coins — User 2 holds 52,000 escrow)
 (4, 2, NULL, 52000.00, CURRENT_TIMESTAMP - INTERVAL '4 hours');
 
 -- Link winning bids to ended auctions
@@ -100,19 +119,40 @@ INSERT INTO transactions (auction_id, winner_bid_id, amount, payment_status, dat
 (1, 3, 18000.00, 'completed', CURRENT_TIMESTAMP - INTERVAL '2 days'),
 (2, 5, 50000.00, 'completed', CURRENT_TIMESTAMP - INTERVAL '1 day');
 
--- 13. WALLET TRANSACTIONS (Wallet logs transactions; Transaction credits 1:1)
-INSERT INTO wallet_transactions (wallet_id, bid_id, txn_id, payment_method_id, type, amount, time) VALUES
-(1, NULL, NULL, NULL, 'deposit', 150000.00, CURRENT_TIMESTAMP - INTERVAL '7 days'),
-(2, NULL, NULL, NULL, 'deposit', 75000.00, CURRENT_TIMESTAMP - INTERVAL '7 days'),
-(3, NULL, NULL, NULL, 'deposit', 120000.00, CURRENT_TIMESTAMP - INTERVAL '7 days'),
-(4, NULL, NULL, NULL, 'deposit', 95000.00, CURRENT_TIMESTAMP - INTERVAL '7 days'),
-(5, NULL, NULL, NULL, 'deposit', 200000.00, CURRENT_TIMESTAMP - INTERVAL '7 days'),
-(1, 3, 1, 4, 'sale_proceeds', 18000.00, CURRENT_TIMESTAMP - INTERVAL '2 days'),
-(2, 5, 2, 5, 'sale_proceeds', 50000.00, CURRENT_TIMESTAMP - INTERVAL '1 day');
+-- 13. WALLET TRANSACTIONS (Wallet logs wallet activity)
+-- Records the full financial history matching the wallet balances above
+INSERT INTO wallet_transactions (wallet_id, bid_id, txn_id, type, amount, time) VALUES
+-- Initial deposits (all users topped up their wallets)
+(1, NULL, NULL, 'deposit', 200000.00, CURRENT_TIMESTAMP - INTERVAL '8 days'),
+(2, NULL, NULL, 'deposit', 200000.00, CURRENT_TIMESTAMP - INTERVAL '8 days'),
+(3, NULL, NULL, 'deposit', 120000.00, CURRENT_TIMESTAMP - INTERVAL '8 days'),
+(4, NULL, NULL, 'deposit', 100000.00, CURRENT_TIMESTAMP - INTERVAL '8 days'),
+(5, NULL, NULL, 'deposit', 200000.00, CURRENT_TIMESTAMP - INTERVAL '8 days'),
+-- Auction 1 settlement: User 4 paid 18,000 (escrow), User 1 received sale proceeds
+(4, 3,   1,    'bid_escrow',    18000.00, CURRENT_TIMESTAMP - INTERVAL '3 days'),
+(1, NULL, 1,   'sale_proceeds', 18000.00, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+-- Auction 1: User 2 (bid 16k) and User 3 (bid 17k) lost, their escrow was refunded at close
+(2, 1,   NULL, 'bid_escrow',    16000.00, CURRENT_TIMESTAMP - INTERVAL '6 days'),
+(2, 1,   NULL, 'bid_refund',    16000.00, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+(3, 2,   NULL, 'bid_escrow',    17000.00, CURRENT_TIMESTAMP - INTERVAL '5 days'),
+(3, 2,   NULL, 'bid_refund',    17000.00, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+-- Auction 2 settlement: User 5 paid 50,000, User 2 received sale proceeds
+(5, 5,   2,    'bid_escrow',    50000.00, CURRENT_TIMESTAMP - INTERVAL '2 days'),
+(2, NULL, 2,   'sale_proceeds', 50000.00, CURRENT_TIMESTAMP - INTERVAL '1 day'),
+-- Auction 2: User 1 (bid 47.5k) lost, refunded at close
+(1, 4,   NULL, 'bid_escrow',    47500.00, CURRENT_TIMESTAMP - INTERVAL '4 days'),
+(1, 4,   NULL, 'bid_refund',    47500.00, CURRENT_TIMESTAMP - INTERVAL '1 day'),
+-- Active auction 3: User 2 bid 31,500 then was outbid by User 1 (31,500 refunded to User 2 immediately)
+(2, 6,   NULL, 'bid_escrow',    31500.00, CURRENT_TIMESTAMP - INTERVAL '20 hours'),
+(2, 6,   NULL, 'bid_refund',    31500.00, CURRENT_TIMESTAMP - INTERVAL '12 hours'),
+-- Active auction 3: User 1 holds 33,000 (current top bidder)
+(1, 7,   NULL, 'bid_escrow',    33000.00, CURRENT_TIMESTAMP - INTERVAL '12 hours'),
+-- Active auction 4: User 2 holds 52,000 (current top bidder)
+(2, 8,   NULL, 'bid_escrow',    52000.00, CURRENT_TIMESTAMP - INTERVAL '4 hours');
 
 -- 14. SHIPMENTS (Transaction dispatches Shipment)
 INSERT INTO shipments (txn_id, address_id, carrier, tracking_number, shipping_date, deliver_date, status) VALUES
-(1, 4, 'DHL Express', 'DHL-8921-9901', CURRENT_TIMESTAMP - INTERVAL '36 hours', CURRENT_TIMESTAMP - INTERVAL '12 hours', 'delivered'),
+(1, 4, 'DHL Express',    'DHL-8921-9901', CURRENT_TIMESTAMP - INTERVAL '36 hours', CURRENT_TIMESTAMP - INTERVAL '12 hours', 'delivered'),
 (2, 5, 'FedEx Priority', 'FDX-7731-4412', CURRENT_TIMESTAMP - INTERVAL '18 hours', NULL, 'in_transit');
 
 -- 15. REVIEWS (User leaves / earns Review for a Transaction)
@@ -126,10 +166,13 @@ INSERT INTO disputes (shipment_id, raised_by, resolved_by, status, date, reason)
 
 -- 17. NOTIFICATIONS (User receives Notifications)
 INSERT INTO notifications (user_id, type, message, created_at, is_read) VALUES
-(4, 'auction_win', 'Congratulations! You won the auction for Sussex Chair, Late 19th Century.', CURRENT_TIMESTAMP - INTERVAL '2 days', TRUE),
-(1, 'item_sold', 'Your item "Sussex Chair" was sold for 18,000 BDT.', CURRENT_TIMESTAMP - INTERVAL '2 days', TRUE),
-(5, 'outbid_alert', 'You were outbid on 19th Century Antique Gold & Emerald Necklace.', CURRENT_TIMESTAMP - INTERVAL '12 hours', FALSE),
-(2, 'payment_received', 'Payment of 50,000 BDT received for European Landscape Oil Painting.', CURRENT_TIMESTAMP - INTERVAL '1 day', TRUE);
+(4, 'auction_won',      'Congratulations! You won the auction for Sussex Chair, Late 19th Century. Payment of BDT 18,000 has been finalized and your shipment is being prepared.', CURRENT_TIMESTAMP - INTERVAL '2 days', TRUE),
+(1, 'item_sold',        'Your item "Sussex Chair, Late 19th Century" was sold for BDT 18,000. Funds have been credited to your wallet.', CURRENT_TIMESTAMP - INTERVAL '2 days', TRUE),
+(5, 'auction_won',      'Congratulations! You won the auction for Antique European Landscape Oil Painting. Payment of BDT 50,000 has been finalized and your shipment is in transit.', CURRENT_TIMESTAMP - INTERVAL '1 day', TRUE),
+(2, 'item_sold',        'Your item "Antique European Landscape Oil Painting" was sold for BDT 50,000. Funds have been credited to your wallet.', CURRENT_TIMESTAMP - INTERVAL '1 day', TRUE),
+(2, 'outbid_alert',     'You have been outbid on "19th Century Antique Gold & Emerald Necklace". Your bid of BDT 31,500 has been refunded to your wallet.', CURRENT_TIMESTAMP - INTERVAL '12 hours', FALSE),
+(1, 'wallet_deposit',   'Successfully deposited BDT 200,000 into your AntiqueX wallet via VISA.', CURRENT_TIMESTAMP - INTERVAL '8 days', TRUE),
+(2, 'wallet_deposit',   'Successfully deposited BDT 200,000 into your AntiqueX wallet via BKASH.', CURRENT_TIMESTAMP - INTERVAL '8 days', TRUE);
 
 -- 18. WATCHLIST (User tracks Items in Watchlist)
 INSERT INTO watchlist (user_id, item_id, date) VALUES

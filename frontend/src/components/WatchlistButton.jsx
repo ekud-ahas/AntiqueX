@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { authFetch } from "../utils/api";
 import "../App.css";
 
 function WatchlistButton({ itemId }) {
@@ -14,7 +15,7 @@ function WatchlistButton({ itemId }) {
       return;
     }
 
-    fetch(`http://localhost:5000/api/watchlist/${user.user_id}`)
+    authFetch(`/api/watchlist/${user.user_id}`)
       .then((response) => response.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -41,13 +42,12 @@ function WatchlistButton({ itemId }) {
 
     try {
       if (isWatching) {
-        const response = await fetch(
-          "http://localhost:5000/api/watchlist",
+        const response = await authFetch(
+          "/api/watchlist",
           {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              user_id: user.user_id,
               item_id: Number(itemId),
             }),
           }
@@ -57,13 +57,12 @@ function WatchlistButton({ itemId }) {
 
         setIsWatching(false);
       } else {
-        const response = await fetch(
-          "http://localhost:5000/api/watchlist",
+        const response = await authFetch(
+          "/api/watchlist",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              user_id: user.user_id,
               item_id: Number(itemId),
             }),
           }

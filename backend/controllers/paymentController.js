@@ -5,10 +5,7 @@ const getUserPaymentMethods = async (req, res) => {
     try {
         const { userId } = req.params;
         const currentUserId = req.user.userId;
-        const isAdmin = req.user.role === "admin" || req.user.role === "moderator";
-
-        // Object ownership check
-        if (Number(currentUserId) !== Number(userId) && !isAdmin) {
+        if (Number(currentUserId) !== Number(userId)) {
             return res.status(403).json({
                 error: "Forbidden: You cannot view another user's payment methods."
             });
@@ -22,14 +19,14 @@ const getUserPaymentMethods = async (req, res) => {
     }
 };
 
-// Add a payment method for a user (Protected)
+// Add a payment method for a user (Protected, Customer only)
 const addPaymentMethod = async (req, res) => {
     try {
-        const user_id = req.user ? req.user.userId : req.body.user_id;
+        const user_id = req.user.userId;
         const { method_name } = req.body;
 
         if (!user_id || !method_name || !method_name.trim()) {
-            return res.status(400).json({ error: "User ID and method name are required" });
+            return res.status(400).json({ error: "Method name is required" });
         }
 
         const newMethod = await paymentModel.addPaymentMethod(user_id, method_name.trim());
@@ -44,15 +41,11 @@ const addPaymentMethod = async (req, res) => {
     }
 };
 
-// Delete a payment method (Protected)
+// Delete a payment method (Protected, Customer only)
 const deletePaymentMethod = async (req, res) => {
     try {
         const { id } = req.params;
-        const user_id = req.user ? req.user.userId : req.body.user_id;
-
-        if (!user_id) {
-            return res.status(400).json({ error: "user_id is required" });
-        }
+        const user_id = req.user.userId;
 
         const deleted = await paymentModel.deletePaymentMethod(id, user_id);
 

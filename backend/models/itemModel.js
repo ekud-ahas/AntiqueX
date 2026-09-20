@@ -254,30 +254,49 @@ const updateItem = async (itemId, {
     min_increment,
     auction_duration
 }) => {
+    // Check if auction already has bids placed
+    const bidCheck = await pool.query(
+        `SELECT COUNT(*) AS bid_count 
+         FROM bids b 
+         JOIN auctions a ON b.auction_id = a.auction_id 
+         WHERE a.item_id = $1`,
+        [itemId]
+    );
+    const hasBids = parseInt(bidCheck.rows[0]?.bid_count || "0", 10) > 0;
+
+    if (hasBids && starting_price !== undefined) {
+        const currentItem = await pool.query("SELECT starting_price FROM items WHERE item_id = $1", [itemId]);
+        if (currentItem.rows.length > 0 && Number(currentItem.rows[0].starting_price) !== Number(starting_price)) {
+            const err = new Error("Cannot alter starting price: bids have already been placed on this auction.");
+            err.statusCode = 400;
+            throw err;
+        }
+    }
+
     const query = `
         UPDATE items
         SET
-            category_id = $1,
-            title = $2,
-            description = $3,
-            year_of_origin = $4,
-            condition = $5,
-            starting_price = $6
+            category_id = COALESCE($1, category_id),
+            title = COALESCE($2, title),
+            description = COALESCE($3, description),
+            year_of_origin = COALESCE($4, year_of_origin),
+            condition = COALESCE($5, condition),
+            starting_price = COALESCE($6, starting_price)
         WHERE item_id = $7
         RETURNING *
     `;
     const result = await pool.query(query, [
-        category_id,
-        title,
-        description,
-        year_of_origin,
-        condition,
-        starting_price,
+        category_id !== undefined ? category_id : null,
+        title !== undefined && title !== "" ? title : null,
+        description !== undefined ? description : null,
+        year_of_origin !== undefined && year_of_origin !== "" ? Number(year_of_origin) : null,
+        condition !== undefined ? condition : null,
+        starting_price !== undefined && starting_price !== "" ? Number(starting_price) : null,
         itemId
     ]);
 
-    // Optional auction settings update
-    if (min_increment && Number(min_increment) > 0) {
+    // Optional auction settings update (only if no bids placed yet)
+    if (!hasBids && min_increment && Number(min_increment) > 0) {
         await pool.query(
             `
             UPDATE auctions
@@ -288,7 +307,7 @@ const updateItem = async (itemId, {
         );
     }
 
-    if (auction_duration && Number(auction_duration) > 0) {
+    if (!hasBids && auction_duration && Number(auction_duration) > 0) {
         await pool.query(
             `
             UPDATE auctions
@@ -304,9 +323,39 @@ const updateItem = async (itemId, {
 };
 
 /**
- * Delete an item
+ * Delete an item (prevent deletion if active bids or transactions exist)
  */
 const deleteItem = async (itemId) => {
+    // 1. Check if bids exist
+    const bidCheck = await pool.query(
+        `SELECT COUNT(*) AS bid_count 
+         FROM bids b 
+         JOIN auctions a ON b.auction_id = a.auction_id 
+         WHERE a.item_id = $1`,
+        [itemId]
+    );
+
+    if (parseInt(bidCheck.rows[0]?.bid_count || "0", 10) > 0) {
+        const err = new Error("Cannot delete item: active bids have already been placed on this auction.");
+        err.statusCode = 400;
+        throw err;
+    }
+
+    // 2. Check if transactions exist
+    const txCheck = await pool.query(
+        `SELECT COUNT(*) AS tx_count 
+         FROM transactions t 
+         JOIN auctions a ON t.auction_id = a.auction_id 
+         WHERE a.item_id = $1`,
+        [itemId]
+    );
+
+    if (parseInt(txCheck.rows[0]?.tx_count || "0", 10) > 0) {
+        const err = new Error("Cannot delete item: this item is associated with completed or pending transactions.");
+        err.statusCode = 400;
+        throw err;
+    }
+
     const query = `
         DELETE FROM items
         WHERE item_id = $1

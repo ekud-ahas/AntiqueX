@@ -91,6 +91,57 @@ const closeAuctionAndRecordWinner = async (auctionId, customClient = null) => {
 
             transaction = txnRes.rows[0];
 
+            // Under Escrow Pre-Funded Bidding (Option A):
+            // The winner's winning bid was already deducted and held at bid time.
+            // Settle immediately: credit the seller's wallet, mark transaction as completed, and provision shipment!
+            const winningAmount = Number(data.bid_amount);
+
+            // Credit seller wallet
+            const sellerWalletRes = await client.query(
+                `INSERT INTO wallets (user_id, balance)
+                 VALUES ($1, $2)
+                 ON CONFLICT (user_id)
+                 DO UPDATE SET balance = wallets.balance + $2
+                 RETURNING wallet_id`,
+                [data.seller_id, winningAmount]
+            );
+            const sellerWalletId = sellerWalletRes.rows[0].wallet_id;
+
+            // Log sale proceeds in seller's wallet ledger
+            await client.query(
+                `INSERT INTO wallet_transactions (wallet_id, txn_id, type, amount)
+                 VALUES ($1, $2, 'sale_proceeds', $3)`,
+                [sellerWalletId, transaction.txn_id, winningAmount]
+            );
+
+            // Mark transaction completed (pre-funded escrow settled)
+            await client.query(
+                `UPDATE transactions SET payment_status = 'completed', date = NOW() WHERE txn_id = $1`,
+                [transaction.txn_id]
+            );
+            transaction.payment_status = "completed";
+
+            // Automatically provision shipment linked to buyer address
+            const buyerAddrRes = await client.query(
+                `SELECT address_id FROM addresses WHERE user_id = $1 ORDER BY address_id DESC LIMIT 1`,
+                [data.bidder_id]
+            );
+            let addressId = buyerAddrRes.rows[0]?.address_id;
+            if (!addressId) {
+                const newAddr = await client.query(
+                    `INSERT INTO addresses (user_id, street, city) VALUES ($1, 'Default Delivery Address', 'Dhaka') RETURNING address_id`,
+                    [data.bidder_id]
+                );
+                addressId = newAddr.rows[0].address_id;
+            }
+
+            await client.query(
+                `INSERT INTO shipments (txn_id, address_id, status)
+                 VALUES ($1, $2, 'pending')
+                 ON CONFLICT (txn_id) DO NOTHING`,
+                [transaction.txn_id, addressId]
+            );
+
             // Notify winner
             await client.query(
                 `
@@ -99,7 +150,7 @@ const closeAuctionAndRecordWinner = async (auctionId, customClient = null) => {
                 `,
                 [
                     data.bidder_id,
-                    `🎉 Congratulations! You won the auction for "${data.title}" at ৳${Number(data.bid_amount).toLocaleString()}. Please complete your payment.`
+                    `Congratulations! You won the auction for "${data.title}". Your held bid of BDT ${winningAmount.toLocaleString()} has been finalized. Shipment is now pending seller dispatch.`
                 ]
             );
 
@@ -111,7 +162,7 @@ const closeAuctionAndRecordWinner = async (auctionId, customClient = null) => {
                 `,
                 [
                     data.seller_id,
-                    `🏷️ Your antique "${data.title}" was sold for ৳${Number(data.bid_amount).toLocaleString()} to @${data.buyer_username}. Waiting for buyer payment.`
+                    `Your antique "${data.title}" was sold for BDT ${winningAmount.toLocaleString()} to @${data.buyer_username}. BDT ${winningAmount.toLocaleString()} has been credited to your wallet.`
                 ]
             );
         } else if (data) {
@@ -123,7 +174,7 @@ const closeAuctionAndRecordWinner = async (auctionId, customClient = null) => {
                 `,
                 [
                     data.seller_id,
-                    `ℹ️ Your auction for "${data.title}" closed with no bids placed.`
+                    `Your auction for "${data.title}" closed with no bids placed.`
                 ]
             );
         }
@@ -265,9 +316,10 @@ const getUserTransactions = async (userId, role) => {
 const processPayment = async ({
     txnId,
     buyerId,
-    paymentMethodType,
-    paymentMethodId,
-    addressId
+    paymentMethodType = "wallet",
+    paymentMethodId = null,
+    addressId = null,
+    deliveryAddressNote = null
 }) => {
     const client = await pool.connect();
     try {
@@ -312,48 +364,35 @@ const processPayment = async ({
         }
 
         const paymentAmount = Number(txn.amount);
+        // The only checkout source is the buyer's AntiqueX wallet.
+        const buyerWalletRes = await client.query(
+            `SELECT wallet_id, balance
+             FROM wallets
+             WHERE user_id = $1
+             FOR UPDATE`,
+            [buyerId]
+        );
 
-        // 2. Process Payment based on type
-        if (paymentMethodType === "wallet") {
-            const buyerWalletRes = await client.query(
-                `
-                SELECT wallet_id, balance
-                FROM wallets
-                WHERE user_id = $1
-                FOR UPDATE
-                `,
-                [buyerId]
-            );
-
-            if (buyerWalletRes.rows.length === 0 || Number(buyerWalletRes.rows[0].balance) < paymentAmount) {
-                await client.query("ROLLBACK");
-                return {
-                    error: `Insufficient wallet balance. You need ৳${paymentAmount.toLocaleString()}, but have ৳${Number(buyerWalletRes.rows[0]?.balance || 0).toLocaleString()}.`,
-                    status: 400
-                };
-            }
-
-            const buyerWallet = buyerWalletRes.rows[0];
-
-            // Deduct from buyer
-            await client.query(
-                `
-                UPDATE wallets
-                SET balance = balance - $1
-                WHERE wallet_id = $2
-                `,
-                [paymentAmount, buyerWallet.wallet_id]
-            );
-
-            // Log buyer transaction
-            await client.query(
-                `
-                INSERT INTO wallet_transactions (wallet_id, txn_id, payment_method_id, type, amount)
-                VALUES ($1, $2, $3, 'payment', $4)
-                `,
-                [buyerWallet.wallet_id, txn.txn_id, paymentMethodId || null, paymentAmount]
-            );
+        if (buyerWalletRes.rows.length === 0 || Number(buyerWalletRes.rows[0].balance) < paymentAmount) {
+            await client.query("ROLLBACK");
+            return {
+                error: `Insufficient wallet balance. You need BDT ${paymentAmount.toLocaleString()}, but have BDT ${Number(buyerWalletRes.rows[0]?.balance || 0).toLocaleString()}. Please deposit funds first.`,
+                status: 400
+            };
         }
+
+        const buyerWallet = buyerWalletRes.rows[0];
+        await client.query(
+            `UPDATE wallets
+             SET balance = balance - $1
+             WHERE wallet_id = $2`,
+            [paymentAmount, buyerWallet.wallet_id]
+        );
+        await client.query(
+            `INSERT INTO wallet_transactions (wallet_id, txn_id, type, amount)
+             VALUES ($1, $2, 'payment', $3)`,
+            [buyerWallet.wallet_id, txn.txn_id, paymentAmount]
+        );
 
         // Credit seller wallet
         const sellerWalletRes = await client.query(
@@ -375,7 +414,7 @@ const processPayment = async ({
             INSERT INTO wallet_transactions (wallet_id, txn_id, payment_method_id, type, amount)
             VALUES ($1, $2, $3, 'sale_proceeds', $4)
             `,
-            [sellerWallet.wallet_id, txn.txn_id, paymentMethodId || null, paymentAmount]
+            [sellerWallet.wallet_id, txn.txn_id, paymentAmount]
         );
 
         // 3. Update Transaction status
@@ -391,15 +430,31 @@ const processPayment = async ({
             [txn.txn_id]
         );
 
-        // 4. Provision Shipment if address is available
+        // 4. Provision Shipment with robust address resolution
         let resolvedAddressId = addressId;
-        if (!resolvedAddressId) {
+        if (deliveryAddressNote && deliveryAddressNote.trim()) {
+            const newAddr = await client.query(
+                `INSERT INTO addresses (user_id, street, city)
+                 VALUES ($1, $2, 'Dhaka')
+                 RETURNING address_id`,
+                [buyerId, deliveryAddressNote.trim()]
+            );
+            resolvedAddressId = newAddr.rows[0].address_id;
+        } else if (!resolvedAddressId) {
             const addrRes = await client.query(
-                `SELECT address_id FROM addresses WHERE user_id = $1 LIMIT 1`,
+                `SELECT address_id FROM addresses WHERE user_id = $1 ORDER BY address_id DESC LIMIT 1`,
                 [buyerId]
             );
             if (addrRes.rows.length > 0) {
                 resolvedAddressId = addrRes.rows[0].address_id;
+            } else {
+                const defaultAddr = await client.query(
+                    `INSERT INTO addresses (user_id, street, city)
+                     VALUES ($1, 'Primary Delivery Address', 'Dhaka')
+                     RETURNING address_id`,
+                    [buyerId]
+                );
+                resolvedAddressId = defaultAddr.rows[0].address_id;
             }
         }
 
@@ -422,7 +477,7 @@ const processPayment = async ({
             `,
             [
                 buyerId,
-                `✅ Payment of ৳${paymentAmount.toLocaleString()} for "${txn.item_title}" was successful! Your shipment will be prepared soon.`
+                `Payment of BDT ${paymentAmount.toLocaleString()} for "${txn.item_title}" was successful. Your shipment will be prepared soon.`
             ]
         );
 
@@ -433,7 +488,7 @@ const processPayment = async ({
             `,
             [
                 txn.seller_id,
-                `💰 Payment of ৳${paymentAmount.toLocaleString()} for "${txn.item_title}" has been received and credited to your wallet. Please dispatch the shipment.`
+                `Payment of BDT ${paymentAmount.toLocaleString()} for "${txn.item_title}" has been received and credited to your wallet. Please dispatch the shipment.`
             ]
         );
 

@@ -118,15 +118,93 @@ const getAllItemsDetailed = async () => {
     return result.rows;
 };
 
-// Raw SQL: change auction status (e.g. flag/cancel or reactivate)
-const updateAuctionStatus = async (auctionId, status) => {
-    const sql = `
-        UPDATE auctions
-        SET status = $1
-        WHERE auction_id = $2
-        RETURNING auction_id, status
-    `;
-    const result = await pool.query(sql, [status, auctionId]);
+// Cancel an auction and atomically return the currently held escrow to the top bidder.
+const cancelAuctionAndRefundEscrow = async (auctionId) => {
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+        const auctionResult = await client.query(
+            `SELECT a.auction_id, a.status, i.title
+             FROM auctions a
+             JOIN items i ON i.item_id = a.item_id
+             WHERE a.auction_id = $1
+             FOR UPDATE OF a`,
+            [auctionId]
+        );
+        const auction = auctionResult.rows[0];
+        if (!auction) {
+            await client.query("ROLLBACK");
+            return null;
+        }
+        if (!["active", "scheduled"].includes(auction.status)) {
+            const error = new Error("Only active or scheduled auctions can be cancelled.");
+            error.statusCode = 400;
+            throw error;
+        }
+        const bidsResult = await client.query(
+            `SELECT bid_id, bidder_id, bid_amount
+             FROM bids
+             WHERE auction_id = $1
+             ORDER BY bid_id`,
+            [auctionId]
+        );
+
+        for (const bid of bidsResult.rows) {
+            const walletResult = await client.query(
+                `SELECT wallet_id FROM wallets WHERE user_id = $1 FOR UPDATE`,
+                [bid.bidder_id]
+            );
+            const wallet = walletResult.rows[0];
+            if (!wallet) {
+                throw new Error("Bidder wallet is missing; cancellation could not be settled safely.");
+            }
+
+            await client.query(
+                `UPDATE wallets SET balance = balance + $1 WHERE wallet_id = $2`,
+                [bid.bid_amount, wallet.wallet_id]
+            );
+            await client.query(
+                `INSERT INTO wallet_transactions (wallet_id, bid_id, type, amount)
+                 VALUES ($1, $2, 'auction_cancel_refund', $3)`,
+                [wallet.wallet_id, bid.bid_id, bid.bid_amount]
+            );
+            await client.query(
+                `INSERT INTO notifications (user_id, type, message)
+                 VALUES ($1, 'auction_cancelled', $2)`,
+                [
+                    bid.bidder_id,
+                    `The auction for "${auction.title}" was cancelled. Your bid of BDT ${Number(bid.bid_amount).toLocaleString()} has been returned to your wallet.`
+                ]
+            );
+        }
+
+        const updatedResult = await client.query(
+            `UPDATE auctions SET status = 'cancelled' WHERE auction_id = $1 RETURNING auction_id, status`,
+            [auctionId]
+        );
+        await client.query("COMMIT");
+        return updatedResult.rows[0];
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
+};
+
+// A cancelled auction can only be restored when it has no bid history. Otherwise
+// the prior high bid has already been refunded and must not become active again.
+const reactivateAuctionWithoutBids = async (auctionId) => {
+    const result = await pool.query(
+        `UPDATE auctions a
+         SET status = 'active'
+         WHERE a.auction_id = $1
+           AND a.status = 'cancelled'
+           AND NOT EXISTS (SELECT 1 FROM bids b WHERE b.auction_id = a.auction_id)
+         RETURNING a.auction_id, a.status`,
+        [auctionId]
+    );
     return result.rows[0] || null;
 };
 
@@ -151,6 +229,7 @@ module.exports = {
     getAllUsersDetailed,
     updateUserStatus,
     getAllItemsDetailed,
-    updateAuctionStatus,
+    cancelAuctionAndRefundEscrow,
+    reactivateAuctionWithoutBids,
     deleteCategory
 };

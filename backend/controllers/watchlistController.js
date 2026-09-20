@@ -26,15 +26,15 @@ const getUserWatchlist = async (req, res) => {
 };
 
 // POST /api/watchlist
-// body: { item_id } (Protected)
+// body: { item_id } (Protected, Customer only)
 const addToWatchlist = async (req, res) => {
     try {
-        const user_id = req.user ? req.user.userId : req.body.user_id;
-        const { item_id } = req.body;
+        const user_id = req.user.userId;
+        const item_id = req.body.item_id || req.params.itemId || req.query.item_id;
 
         if (!user_id || !item_id) {
             return res.status(400).json({
-                error: "user_id and item_id are required"
+                error: "item_id is required"
             });
         }
 
@@ -66,16 +66,16 @@ const addToWatchlist = async (req, res) => {
     }
 };
 
-// DELETE /api/watchlist
-// body: { item_id } (Protected)
+// DELETE /api/watchlist or DELETE /api/watchlist/:itemId
+// (Protected, Customer only)
 const removeFromWatchlist = async (req, res) => {
     try {
-        const user_id = req.user ? req.user.userId : req.body.user_id;
-        const { item_id } = req.body;
+        const user_id = req.user.userId;
+        const item_id = req.params.itemId || req.body.item_id || req.query.item_id;
 
         if (!user_id || !item_id) {
             return res.status(400).json({
-                error: "user_id and item_id are required"
+                error: "item_id is required"
             });
         }
 

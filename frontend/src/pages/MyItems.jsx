@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { authFetch } from "../utils/api";
 import "../App.css";
 import "./MyItems.css";
 
@@ -13,7 +14,7 @@ function MyItems() {
   const fetchMyItems = () => {
     setLoading(true);
 
-    fetch("http://localhost:5000/items")
+    fetch("/items")
       .then((response) => {
         if (!response.ok) throw new Error("Failed to fetch items");
         return response.json();
@@ -47,12 +48,10 @@ function MyItems() {
     }
 
     try {
-      const response = await fetch(
-        `http://localhost:5000/items/${item_id}`,
+      const response = await authFetch(
+        `/items/${item_id}`,
         {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ seller_id: user.user_id }),
         }
       );
 
@@ -115,7 +114,7 @@ function MyItems() {
                     className="my-item-img"
                     src={
                       item.thumbnail_url?.startsWith("/uploads/")
-                        ? `http://localhost:5000${item.thumbnail_url}`
+                        ? `${item.thumbnail_url}`
                         : item.thumbnail_url
                     }
                     alt={item.title}

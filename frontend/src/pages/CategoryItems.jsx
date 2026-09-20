@@ -16,11 +16,11 @@ function CategoryItems() {
     setError("");
 
     Promise.all([
-      fetch(`http://localhost:5000/api/categories/${id}`).then((res) => {
+      fetch(`/api/categories/${id}`).then((res) => {
         if (!res.ok) throw new Error("Category not found");
         return res.json();
       }),
-      fetch(`http://localhost:5000/api/categories/${id}/items`).then(
+      fetch(`/api/categories/${id}/items`).then(
         (res) => {
           if (!res.ok) throw new Error("Failed to fetch items");
           return res.json();
@@ -75,7 +75,7 @@ function CategoryItems() {
                     className="category-item-img"
                     src={
                       item.thumbnail_url?.startsWith("/uploads/")
-                        ? `http://localhost:5000${item.thumbnail_url}`
+                        ? `${item.thumbnail_url}`
                         : item.thumbnail_url
                     }
                     alt={item.title}

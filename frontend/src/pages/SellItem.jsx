@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { authFetch } from "../utils/api";
 import "../App.css";
 import "./SellItem.css";
 
@@ -25,7 +26,7 @@ function SellItem() {
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        fetch("http://localhost:5000/api/categories")
+        fetch("/api/categories")
             .then((res) => (res.ok ? res.json() : []))
             .then((data) => {
                 setCategories(data);
@@ -84,8 +85,8 @@ function SellItem() {
                 formData.append("image", image);
             }
 
-            const response = await fetch(
-                "http://localhost:5000/items",
+            const response = await authFetch(
+                "/items",
                 {
                     method: "POST",
                     body: formData

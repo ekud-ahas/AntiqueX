@@ -5,7 +5,7 @@ const {
     placeBid,
     getAuction
 } = require("../controllers/auctionController");
-const { authenticateToken } = require("../middleware/authMiddleware");
+const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
 
 router.get("/test", (req, res) => {
     res.json({
@@ -16,7 +16,7 @@ router.get("/test", (req, res) => {
 // Public: View auction & bid history
 router.get("/:id", getAuction);
 
-// Protected: Place bid requires authentication
-router.post("/:id/bids", authenticateToken, placeBid);
+// Protected: Place bid requires customer role (admins/moderators cannot bid)
+router.post("/:id/bids", authenticateToken, requireRole("customer"), placeBid);
 
 module.exports = router;

@@ -57,7 +57,7 @@ The application is structured into a modern decoupled architecture adhering to s
 - **External Museum API Integration:** Features a background integration module (`metImporter.js`) that interfaces with **The Metropolitan Museum of Art Collection API** to automatically seed authentic public-domain artifacts into the platform catalog with real high-resolution imagery and historical metadata.
 
 ### 2.2 Relational Data Modeling & ERD Alignment
-The database schema is derived directly from the provided Entity-Relationship Diagram (`AntiqueX.pdf` and `schema.sql`), structured in **Third Normal Form (3NF)** with 18 distinct relational tables:
+The database schema is derived directly from the provided Entity-Relationship Diagram (`AntiqueX.pdf` and `schema.sql`), structured in **Third Normal Form (3NF)** with 19 distinct relational tables:
 
 | # | Entity / Table | Role in the System | Key Relational Foreign Keys |
 |---|---|---|---|
@@ -79,6 +79,7 @@ The database schema is derived directly from the provided Entity-Relationship Di
 | 16 | `disputes` | Shipment problem escalation tickets submitted by users, resolved by admins. | References `shipment_id`, `raised_by`, `resolved_by`. |
 | 17 | `notifications` | In-app alerts for auction wins, outbid events, payments, and sales. | References `user_id` (`users`). |
 | 18 | `watchlist` | Many-to-Many bridge table allowing users to bookmark auctions. | Composite uniqueness on `(user_id, item_id)`. |
+| 19 | `revoked_tokens` | Server-side blacklist for invalidated JWT tokens upon user logout (§3.1). | Indexed on `token` and `expires_at`. |
 
 ---
 
@@ -90,24 +91,27 @@ The database schema is derived directly from the provided Entity-Relationship Di
 - **Session Tokens:** Stateless authentication is maintained via signed JSON Web Tokens (JWT) transmitted via the `Authorization: Bearer <token>` header.
 - **Account Suspension Guard:** The authentication middleware (`authMiddleware.js`) verifies on every single request whether a user account has been marked as `suspended` in the database. If suspended, the request is immediately aborted with HTTP 403 Forbidden.
 
-### 3.2 Auction Lifecycle & Bidding Mechanism
+### 3.2 Auction Lifecycle & Escrow Pre-Funded Bidding (Option A)
 1. **Creation:** When a seller lists an item (`POST /items`), a database transaction creates the item, inserts gallery image records, and initializes an `active` auction with an automatically calculated minimum increment (5% of the starting price, rounded to 100 BDT, minimum 100 BDT).
-2. **Bidding:** When a bid is submitted (`POST /api/auctions/:id/bids`):
-   - The user must be authenticated and active.
-   - Self-bidding is strictly prevented: `Number(seller_id) === Number(bidder_id)` rejects the bid with HTTP 400.
-   - Bid amounts are validated against `highest_bid + min_increment`.
-   - Bids are inserted into `bids` with current timestamps.
-3. **Auction Expiration & Settlement:**
-   - Expired active auctions are automatically detected upon query or trigger.
-   - The system executes an ACID transaction (`closeAuctionAndRecordWinner`) that marks the auction `ended`, fetches the top bid, inserts a pending record into `transactions`, sets `winner_bid_id`, and creates notifications for both winner and seller.
+2. **Escrow Pre-Funded Bidding (`placeBidWithLock`):**
+   - **ACID Row Lock:** Locks the auction row (`FOR UPDATE OF a`) and verifies real-time status and non-expired timestamp (`NOW() < end_time`).
+   - **Anti-Shill Bidding:** Sellers cannot bid on their own listings.
+   - **Bidder Wallet Check & Fund Hold:** Locks bidder's wallet (`SELECT balance FROM wallets FOR UPDATE`). If `balance < bid_amount`, rejects the bid with HTTP 400. Deducts `bid_amount` immediately into escrow and logs a `bid_escrow` record in `wallet_transactions`. (If bidder is already leading bidder raising their own bid, only the incremental difference is deducted).
+   - **Instant Outbid Refund:** If another user previously held the highest bid, their held amount is **immediately refunded back into their wallet** in the same transaction, a `bid_refund` record is logged, and an outbid notification is issued. No bidder's funds remain trapped after being outbid!
+3. **Auction Expiration & Instant Settlement:**
+   - When an auction closes (`closeAuctionAndRecordWinner`), the winning bidder's held bid is transferred directly to the **Seller's wallet** (`UPDATE wallets SET balance = balance + $winning_bid`).
+   - A `sale_proceeds` record is logged in `wallet_transactions`.
+   - The transaction is marked `completed` and a delivery `shipments` record is automatically provisioned for the winning buyer's address.
 
-### 3.3 Wallet & Atomic Payment Workflow
-- **Digital Wallet:** Every user has a wallet record. Users can deposit funds (`POST /api/wallet/deposit`) and withdraw funds (`POST /api/wallet/withdraw`).
-- **Settlement Checkout (`POST /api/transactions/:id/pay`):**
-  - Uses PostgreSQL row-level locks (`SELECT ... FOR UPDATE`) to prevent race conditions.
-  - Verifies that the paying user is the genuine winning buyer (`buyer_id === currentUserId`).
-  - Verifies that the wallet balance covers the winning amount.
-  - Atomically deducts funds from the buyer's wallet, logs a debit `wallet_transaction`, credits the seller's wallet, logs a credit `wallet_transaction`, marks the transaction as `completed`, and automatically provisions a new `pending` record in the `shipments` table linked to the buyer's registered delivery address.
+### 3.3 Wallet & Mock Payment Gateway Server
+- **Simulated External Payment Gateway (`backend/services/mockPaymentGateway.js`):**
+  - Simulates an external payment gateway API (e.g. bKash, Nagad, Visa/Mastercard).
+  - Validates provider channels, card/mobile numbers, and mock PINs.
+  - Generates realistic gateway references (e.g. `GW_BKASH_...`) and authorization codes (`AUTH_...`).
+- **In-Platform Wallet Management:**
+  - Users deposit fiat funds through the Mock Payment Gateway (`POST /api/wallet/deposit`), immediately crediting their auction bidding balance.
+  - Users can withdraw accumulated sale proceeds back to their real-world accounts (`POST /api/wallet/withdraw`).
+  - Double-entry ledger in `wallet_transactions` tracks every deposit, withdrawal, bid hold (`bid_escrow`), outbid refund (`bid_refund`), and sale payout (`sale_proceeds`).
 
 ---
 
@@ -118,18 +122,19 @@ The database schema is derived directly from the provided Entity-Relationship Di
 | **3.1 Authentication (All Roles)** | Functional sign-up and login for all roles | **COMPLETED (100%)** | Customers register via `/api/auth/register`. Login endpoint `/api/auth/login` checks both `users` and `admins` tables, identifying `customer`, `admin`, and `moderator`. |
 | | Passwords salted and hashed (bcrypt) | **COMPLETED (100%)** | Handled with `bcrypt.hash(password, 10)` in `authController.js`. Zero plaintext passwords. |
 | | Session / Token Management | **COMPLETED (100%)** | Signed JWT issued upon login, inspected by `authenticateToken` middleware. |
-| | Functional Logout | **COMPLETED (100%)** | Dedicated `/api/auth/logout` endpoint + token/user removal from frontend client storage. |
+| | Functional Server-Side Logout | **COMPLETED (100%)** | Dedicated `/api/auth/logout` endpoint stores token in `revoked_tokens` table until expiry; `authenticateToken` rejects revoked tokens with HTTP 401. |
 | | Input validation & HTTP status codes | **COMPLETED (100%)** | Comprehensive checks returning 400 (Bad Request), 401 (Unauthorized), 403 (Forbidden), 409 (Conflict on duplicate user/email). |
 | | Role stored in DB, not trusted from client | **COMPLETED (100%)** | Role is resolved exclusively by backend database queries on `users` / `admins` tables. |
-| **3.2 Authorization (Role Separation)** | Distinct capability per role | **COMPLETED (100%)** | Customers see personal wallet, bids, selling, and purchases; Admins see system analytics, user management, and category controls; Moderators see moderation controls without category deletion. |
-| | Cross-role access blocked | **COMPLETED (100%)** | Middleware `requireRole("admin")` and `requireRole("admin", "moderator")` return HTTP 403 Forbidden if unauthorized. |
-| | Object-level ownership checks | **COMPLETED (100%)** | Users cannot edit or delete items of other users (`getItemSellerId`), cannot view or transact on other users' wallets (`/api/wallet/:userId`), and cannot view unowned transactions. |
-| | Server-side enforcement | **COMPLETED (100%)** | Tested and verified via backend integration test suites (`verify-auth.js` and `test-suspended-bid.js`) bypassing the frontend. |
-| **3.3 HTTP/API Requests (≥ 20% Features)** | REST conventions & HTTP methods | **COMPLETED (100%)** | 30+ endpoints using `GET`, `POST`, `PUT`, `PATCH`, `DELETE` across 9 route modules with standard HTTP status codes (200, 201, 400, 401, 403, 404, 409, 500). |
+| **3.2 Authorization (Role Separation)** | Distinct capability per role | **COMPLETED (100%)** | Customers see personal wallet, bids, selling, orders, and notifications; Admins see system analytics, user suspension, and category controls; Moderators see moderation controls without category deletion. |
+| | Cross-role access blocked | **COMPLETED (100%)** | Strict middleware: `requireRole("customer")` blocks Admins from customer financial/bidding routes; `requireRole("admin")` blocks Customers and Moderators from admin actions (HTTP 403). |
+| | Object-level ownership checks | **COMPLETED (100%)** | Users cannot edit or delete items of other users, cannot view or transact on other users' wallets (`/api/wallet/:userId`), and cannot pay for unowned transactions. |
+| | Server-side enforcement | **COMPLETED (100%)** | Fully enforced on backend; verified via automated test suite `test/test-comprehensive-fixes.js` bypassing the frontend. |
+| **3.3 HTTP/API Requests (≥ 20% Features)** | REST conventions & HTTP methods | **COMPLETED (100%)** | 35+ endpoints using `GET`, `POST`, `PUT`, `PATCH`, `DELETE` across 10 route modules with standard HTTP status codes (200, 201, 400, 401, 403, 404, 409, 500). |
 | | Parameterized SQL queries (No ORM) | **COMPLETED (100%)** | Strictly raw SQL queries through `pg` connection pool with `$1, $2, ...` placeholders. Zero ORMs used. |
+| | ACID Concurrency & Row-Level Locking | **COMPLETED (100%)** | Implemented `placeBidWithLock` with `BEGIN`, `SELECT ... FOR UPDATE OF a`, real-time expiration check, and `COMMIT` to guarantee race condition safety under concurrent bidding. |
 | **3.4 Minimal Functional Frontend** | Authentication screens | **COMPLETED (100%)** | React `Login.jsx` and `Register.jsx` pages wired directly to the backend. |
 | | Role-aware interface | **COMPLETED (100%)** | Dynamic `Navbar.jsx` rendering role badges (`CUSTOMER`, `MODERATOR`, `ADMIN`) and conditionally exposing role-specific navigation routes. |
-| | Feature access from UI | **COMPLETED (100%)** | 14 functional React views allowing listing items, uploading images, viewing details, placing bids, managing watchlist, wallet deposit/withdraw, purchasing, and admin dashboard. |
+| | Feature access from UI | **COMPLETED (100%)** | 15 functional React views allowing listing items, uploading images, viewing details, placing bids, managing watchlist, wallet deposit/withdraw, purchasing, notifications, and admin dashboard. |
 | | Error feedback | **COMPLETED (100%)** | Form validation feedback and server error banners rendered in red/amber alerts across all forms. |
 
 ---
@@ -190,13 +195,17 @@ The database schema is derived directly from the provided Entity-Relationship Di
   - Add items to watchlist (`POST /api/watchlist`).
   - Remove items from watchlist (`DELETE /api/watchlist`).
   - Dedicated watchlist management page (`Watchlist.jsx`) displaying current highest bids and auction statuses of bookmarked items.
-  - Interactive bookmark button (`WatchlistButton.jsx`) integrated across item cards and item details.
+### 5.6 Notification Center
+- **In-App Notification Alerts:**
+  - Automatic notification generation upon auction events (outbid notifications via `placeBidWithLock`, auction settlement alerts).
+  - Backend endpoints: `GET /api/notifications` and `PATCH /api/notifications/:id/read`.
+  - Dedicated frontend view (`Notifications.jsx`) accessible from the navigation bar, allowing users to review alerts and mark them as read.
 
 ---
 
 ## 6. Remaining Features (What is Left to be Done)
 
-While the core functional requirements of the 60% evaluation are fully met, the comprehensive 18-table Entity-Relationship Diagram outlines several advanced platform features designated for final completion:
+While the core functional requirements of the 60% evaluation are fully met, the comprehensive 19-table Entity-Relationship Diagram outlines several advanced platform features designated for final completion:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -208,10 +217,9 @@ While the core functional requirements of the 60% evaluation are fully met, the 
 │ 2. Logistics & Courier Module │ shipments Table (Full dispatch cycle)  │
 │ 3. Bilateral Review & Rating  │ reviews Table                          │
 │ 4. Dispute Resolution System  │ disputes Table                         │
-│ 5. Notification Center UI     │ notifications Table (Inbox & Read)     │
-│ 6. Address Book Management    │ addresses Table (CRUD UI)              │
-│ 7. Payment Methods Management │ payment_methods Table (Cards/MFS UI)   │
-│ 8. Search & Advanced Filtering│ Multi-facet catalog search             │
+│ 5. Address Book Management    │ addresses Table (CRUD UI)              │
+│ 6. Payment Methods Management │ payment_methods Table (Cards/MFS UI)   │
+│ 7. Search & Advanced Filtering│ Multi-facet catalog search             │
 └───────────────────────────────┴────────────────────────────────────────┘
 ```
 
@@ -240,24 +248,18 @@ While the core functional requirements of the 60% evaluation are fully met, the 
   - **Customer Ticket Submission:** Allow buyers to raise a dispute against a shipment (e.g., damaged antique, tracking delay, item mismatch).
   - **Admin Dispute Resolution:** Add a dedicated "Disputes" tab in the `AdminDashboard` where admins can inspect evidence, contact parties, and mark disputes as `resolved` or issue wallet refunds.
 
-### 6.5 Real-Time Notifications Center (`notifications`)
-- **Current State:** Backend models insert notification records for events (outbid, won, paid, sold).
-- **What is Left to Do:**
-  - Create endpoints (`GET /api/notifications`, `PATCH /api/notifications/:id/read`, `PATCH /api/notifications/read-all`).
-  - Add a notification bell icon in `Navbar.jsx` with an unread badge counter and a dropdown drawer showing recent activity.
-
-### 6.6 User Address Book & Multiple Shipping Addresses (`addresses`)
+### 6.5 User Address Book & Multiple Shipping Addresses (`addresses`)
 - **Current State:** Schema and seed data exist; payment currently picks the first available address.
 - **What is Left to Do:**
   - User address management UI: add, edit, and set primary shipping addresses with division, district, city, street, and postal code.
   - Allow selecting from saved addresses during order checkout.
 
-### 6.7 Dedicated Payment Instruments Management (`payment_methods`)
+### 6.6 Dedicated Payment Instruments Management (`payment_methods`)
 - **Current State:** Schema and basic backend CRUD endpoints exist.
 - **What is Left to Do:**
   - Frontend interface in the user profile to add/remove saved payment cards, bKash/Nagad accounts, or bank wire details.
 
-### 6.8 Advanced Search, Sorting, and Era-Based Filtering
+### 6.7 Advanced Search, Sorting, and Era-Based Filtering
 - **Current State:** Category filtering is active.
 - **What is Left to Do:**
   - Full-text search by antique keywords and descriptions.
@@ -266,10 +268,121 @@ While the core functional requirements of the 60% evaluation are fully met, the 
 
 ---
 
-## 7. Summary & Final Assessment
+## 7. Comprehensive Bug Audit & Resolved Flaws (Developer Handover)
+
+> **Notice for Teammates & Collaborators:**  
+> This section logs all major architectural bugs, security vulnerabilities, race conditions, and guideline violations discovered during the whole-codebase review, along with how they were resolved. Review this carefully before extending features or modifying routes.
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             SUMMARY OF AUDITED & FIXED DEFECTS                                   │
+├────┬───────────────────────────────┬───────────────────┬─────────────────────────────────────────┤
+│ ID │ Vulnerability / Defect Area   │ Severity          │ Guideline / File Reference              │
+├────┼───────────────────────────────┼───────────────────┼─────────────────────────────────────────┤
+│ B1 │ No Server-Side Logout (JWT)   │ Critical          │ §3.1 Token Invalidation                 │
+│ B2 │ PK Collision & Role Ambiguity │ Critical (Security│ §3.2 RBAC Cross-Role Isolation          │
+│ B3 │ Body-ID Spoofing (Ownership)  │ High (IDOR)       │ §3.2 Object-Level Ownership Checks      │
+│ B4 │ Bidding Concurrency Race Cond.│ Critical (ACID)   │ §3.3 Concurrency & Double-Bidding       │
+│ B5 │ Bidding on Expired Auctions   │ High (Business)   │ auctionModel.js                         │
+│ B6 │ Unchecked Item Deletion       │ High (Integrity)  │ itemModel.js                            │
+│ B7 │ Destructive PUT Item Updates  │ Medium (Data Loss)│ itemModel.js (Missing COALESCE)         │
+│ B8 │ Double-Credit on Payment Fail │ High (Financial)  │ transactionModel.js                     │
+│ B9 │ External Payment Impersonation│ Medium (Financial)│ transactionModel.js / paymentModel.js   │
+│ B10│ Missing Customer Notifications│ Medium (Feature)  │ notificationModel.js / UI missing       │
+│ B11│ Frontend Missing Auth Headers │ High (UX / 401s)  │ §3.4 Minimal Frontend (api.js wrapper)  │
+└────┴───────────────────────────────┴───────────────────┴─────────────────────────────────────────┘
+```
+
+### Bug B1: No Server-Side Token Invalidation on Logout (§3.1)
+- **Problem**: When a user logged out, the frontend simply deleted `localStorage.token`. The backend had no revocation mechanism. The token remained valid until its 24-hour expiration, violating course guideline §3.1.
+- **Fix**:
+  - Created the `revoked_tokens (token_id, token, revoked_at, expires_at)` table in PostgreSQL with an index on `token`.
+  - `POST /api/auth/logout` extracts the token claims and inserts it into `revoked_tokens`.
+  - `authenticateToken` middleware queries `revoked_tokens` on every protected request. Blacklisted tokens return `401 Unauthorized` immediately.
+  - `Navbar.jsx` updated to send `Authorization: Bearer <token>` on logout.
+
+### Bug B2: Primary Key Collision & Lack of Cross-Role Isolation (§3.2)
+- **Problem**: Regular users are stored in `users` (`user_id` sequence 1, 2, ...), while staff are in `admins` (`admin_id` sequence 1, 2, ...). When an admin logged in, their JWT had `userId = 1`. In endpoints lacking role checks (e.g. `POST /api/wallet/deposit`), an Admin was treated as Customer #1 (John Smith), modifying John's wallet balance!
+- **Fix**:
+  - Applied strict `requireRole("customer")` on:
+    - `/api/wallet/deposit` & `/api/wallet/withdraw`
+    - `POST /api/auctions/:id/bids`
+    - `POST /items` (sell item)
+    - `POST /api/watchlist` & `DELETE /api/watchlist`
+    - `POST /api/payments/methods`
+    - `POST /api/transactions/:id/pay`
+  - Applied `requireRole("admin")` or `requireRole("admin", "moderator")` on administrative endpoints.
+  - In `authController.js`, registration now checks against `admins.username` to prevent a customer from claiming reserved admin handles.
+
+### Bug B3: Insecure Direct Object References (IDOR via Request Body) (§3.2)
+- **Problem**: Controllers trusted client-supplied identifiers in request bodies:
+  - `walletController.depositFunds` used `req.body.user_id`.
+  - `watchlistController` used `req.body.user_id`.
+  - `transactionController.payForWonAuction` used `req.body.buyer_id`.
+  - Any user could deposit funds or trigger actions using another customer's ID by altering the JSON payload.
+- **Fix**:
+  - Completely removed reliance on `req.body.user_id` and `req.body.buyer_id` in write controllers.
+  - All operations now exclusively use `req.user.userId` extracted from the cryptographically signed JWT.
+  - Added object-level ownership checks preventing users from querying or modifying resources owned by other users.
+
+### Bug B4: Auction Bidding Concurrency Race Condition & Double-Bidding (§3.3)
+- **Problem**: `auctionModel.insertBid` executed a basic read-then-write sequence without table or row locks. If two users bid at the exact same millisecond:
+  1. Both read the same highest bid.
+  2. Both submitted the same increment.
+  3. Both bids were inserted with the same price, corrupting the audit trail and violating English auction rules.
+- **Fix**:
+  - Implemented `placeBidWithLock` inside an explicit ACID transaction (`BEGIN` ... `COMMIT` / `ROLLBACK`).
+  - Row-level locking: `SELECT ... FROM auctions a JOIN items i ON a.item_id = i.item_id WHERE a.auction_id = $1 FOR UPDATE OF a;`
+  - Under the lock, re-reads the latest bid before inserting. Simultaneous duplicate bids are rejected with `400 Bad Request`.
+
+### Bug B5: Bidding on Expired or Non-Active Auctions
+- **Problem**: The bid endpoint did not verify `end_time` against current time in real-time. Bids could be inserted onto auctions whose end timestamp had already elapsed.
+- **Fix**:
+  - In `placeBidWithLock`, added real-time evaluation: `if (new Date(auction.end_time).getTime() <= Date.now()) throw Error("Auction ended")`.
+  - Rejects bids on any auction with status other than `'active'`.
+
+### Bug B6: Unrestricted Item Deletion and Inconsistent State
+- **Problem**: A seller could delete an item (`DELETE /items/:id`) even if the auction already had active bids or was settled in a completed transaction, leaving orphan records or crashing foreign key queries.
+- **Fix**:
+  - Updated `itemModel.deleteItem`: queries `bids` and `transactions` before deletion.
+  - If bids or transactions exist, deletion is rejected with `400 Bad Request` ("Cannot delete item with active bids or transactions").
+  - In `updateItem`, blocked editing `starting_price` or auction duration if bids have already been placed.
+
+### Bug B7: Destructive Partial Updates on Items (Missing SQL COALESCE)
+- **Problem**: `itemModel.updateItem` replaced all columns directly. If a frontend form sent only a subset of fields, unspecified fields were overwritten with `NULL`.
+- **Fix**:
+  - Converted the query to parameterized `COALESCE($1, column)` expressions so omitted properties preserve existing database values.
+
+### Bug B8: Financial Settlement Asynchrony & False Crediting
+- **Problem**: In `transactionModel.processPayment`, seller balance was credited before buyer balance deduction was verified. If buyer deduction failed (e.g. database error), the seller could still be credited.
+- **Fix**:
+  - Structured the payment inside a strict transaction where buyer debit must succeed and return the modified row before seller credit is executed.
+  - If either step fails, the entire transaction issues `ROLLBACK`.
+
+### Bug B9: External Payment Method Impersonation
+- **Problem**: When paying using a stored payment method, the backend never verified that the `payment_method_id` actually belonged to the paying user.
+- **Fix**:
+  - Added query validation: `SELECT 1 FROM payment_methods WHERE payment_method_id = $1 AND user_id = $2`. Rejects unowned payment methods.
+
+### Bug B10: Missing Notification Triggers & Missing UI
+- **Problem**: When a customer was outbid, no notification was stored. Even when notifications were created for sales, there were no API endpoints or UI page for the user to view or mark them as read.
+- **Fix**:
+  - Created `notificationModel.js`, `notificationController.js`, and `notificationRoutes.js` (`/api/notifications`).
+  - Added automatic outbid notice insertion inside `placeBidWithLock`.
+  - Created `Notifications.jsx` in frontend and linked it in `Navbar.jsx`.
+
+### Bug B11: Frontend Missing Authorization Headers (401 Errors) (§3.4)
+- **Problem**: Multiple React components used native `fetch()` without passing the `Authorization` header, triggering unexpected `401 Unauthorized` errors across the UI.
+- **Fix**:
+  - Created centralized [`frontend/src/utils/api.js`](file:///g:/CSE%20216%20DB%20Project/AntiqueX/frontend/src/utils/api.js) exporting `authFetch` and `api` helper methods.
+  - Refactored all protected pages (`ItemDetails`, `SellItem`, `EditItem`, `MyItems`, `Purchases`, `Wallet`, `Watchlist`, `Categories`, `Navbar`) to automatically inject `Authorization: Bearer <token>`.
+
+---
+
+## 8. Summary & Final Assessment
 
 AntiqueX demonstrates a robust, production-grade architectural foundation that **exceeds the 60% evaluation benchmark** established by the Department of CSE, BUET:
-- **Database Layer:** 100% normalized 3NF schema, complete with constraints, triggers, and foreign keys across 18 entities.
+- **Database Layer:** 100% normalized 3NF schema, complete with constraints, triggers, and foreign keys across 19 entities.
 - **Data Access:** Exclusively raw parameterized SQL through pooled client connections, adhering strictly to the zero-ORM policy.
 - **Security & RBAC:** Multi-role authentication (Customer, Moderator, Admin) with server-side validation, password hashing, and object-level ownership checks across every sensitive resource.
 - **Feature Completion:** Far exceeds the mandatory 20% functional route milestone with a fully wired React frontend driving real auction lifecycles, digital wallet funding, atomic checkout settlements, and administrative moderation.

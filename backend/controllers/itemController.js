@@ -53,7 +53,7 @@ const createItem = async (req, res) => {
         } = req.body;
 
         // Securely resolve seller_id from authenticated token
-        const seller_id = req.user ? req.user.userId : req.body.seller_id;
+        const seller_id = req.user.userId;
 
         if (!seller_id || !category_id || !title || !starting_price) {
             return res.status(400).json({
@@ -96,8 +96,8 @@ const createItem = async (req, res) => {
 
     } catch (error) {
         console.error("CREATE ITEM ERROR:", error);
-        res.status(500).json({
-            error: "Failed to create item"
+        res.status(error.statusCode || 500).json({
+            error: error.message || "Failed to create item"
         });
     }
 };
@@ -118,7 +118,7 @@ const updateItem = async (req, res) => {
             auction_duration
         } = req.body;
 
-        const userId = req.user ? req.user.userId : req.body.seller_id;
+        const userId = req.user.userId;
         const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 
         if (!userId) {
@@ -160,8 +160,8 @@ const updateItem = async (req, res) => {
 
     } catch (error) {
         console.error("UPDATE ITEM ERROR:", error);
-        res.status(500).json({
-            error: "Failed to update item"
+        res.status(error.statusCode || 500).json({
+            error: error.message || "Failed to update item"
         });
     }
 };
@@ -171,7 +171,7 @@ const updateItem = async (req, res) => {
 const deleteItem = async (req, res) => {
     try {
         const { id } = req.params;
-        const userId = req.user ? req.user.userId : req.body.seller_id;
+        const userId = req.user.userId;
         const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 
         if (!userId) {
@@ -204,8 +204,8 @@ const deleteItem = async (req, res) => {
 
     } catch (error) {
         console.error("DELETE ITEM ERROR:", error);
-        res.status(500).json({
-            error: "Failed to delete item"
+        res.status(error.statusCode || 500).json({
+            error: error.message || "Failed to delete item"
         });
     }
 };
@@ -216,7 +216,7 @@ const addItemImage = async (req, res) => {
     try {
         const { id } = req.params;
         const { img_url } = req.body;
-        const userId = req.user ? req.user.userId : req.body.seller_id;
+        const userId = req.user.userId;
         const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 
         if (!img_url) {

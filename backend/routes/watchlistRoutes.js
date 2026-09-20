@@ -6,11 +6,12 @@ const {
     addToWatchlist,
     removeFromWatchlist
 } = require("../controllers/watchlistController");
-const { authenticateToken } = require("../middleware/authMiddleware");
+const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
 
 // All watchlist routes require authentication
 router.get("/:userId", authenticateToken, getUserWatchlist);
-router.post("/", authenticateToken, addToWatchlist);
-router.delete("/", authenticateToken, removeFromWatchlist);
+router.post("/", authenticateToken, requireRole("customer"), addToWatchlist);
+router.delete("/", authenticateToken, requireRole("customer"), removeFromWatchlist);
+router.delete("/:itemId", authenticateToken, requireRole("customer"), removeFromWatchlist);
 
 module.exports = router;

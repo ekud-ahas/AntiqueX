@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { authFetch } from "../utils/api";
 import "../App.css";
 import "./Purchases.css";
 
@@ -38,9 +39,9 @@ function Purchases() {
         if (!user) return;
         try {
             const [txnsRes, walletRes, methodsRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/transactions/user/${user.user_id}`),
-                fetch(`http://localhost:5000/api/wallet/${user.user_id}`),
-                fetch(`http://localhost:5000/api/payments/methods/${user.user_id}`)
+                authFetch(`/api/transactions/user/${user.user_id}`),
+                authFetch(`/api/wallet/${user.user_id}`),
+                authFetch(`/api/payments/methods/${user.user_id}`)
             ]);
 
             const txnsData = await txnsRes.json();
@@ -90,13 +91,12 @@ function Purchases() {
 
         try {
             const payload = {
-                buyer_id: user.user_id,
                 payment_method_type: paymentType,
                 payment_method_id: paymentType === "method" ? Number(selectedMethodId) : null,
                 delivery_address_note: deliveryAddress
             };
 
-            const res = await fetch(`http://localhost:5000/api/transactions/${checkoutTxn.txn_id}/pay`, {
+            const res = await authFetch(`/api/transactions/${checkoutTxn.txn_id}/pay`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload)
@@ -191,7 +191,7 @@ function Purchases() {
                                     <div className="order-card-img">
                                         {txn.thumbnail_url ? (
                                             <img
-                                                src={txn.thumbnail_url.startsWith("/uploads/") ? `http://localhost:5000${txn.thumbnail_url}` : txn.thumbnail_url}
+                                                src={txn.thumbnail_url.startsWith("/uploads/") ? `${txn.thumbnail_url}` : txn.thumbnail_url}
                                                 alt={txn.item_title}
                                             />
                                         ) : (

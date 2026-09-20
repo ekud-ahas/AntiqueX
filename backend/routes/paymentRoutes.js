@@ -1,11 +1,11 @@
 const express = require("express");
 const router = express.Router();
 const paymentController = require("../controllers/paymentController");
-const { authenticateToken } = require("../middleware/authMiddleware");
+const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
 
-// All payment method routes require authentication
-router.get("/methods/:userId", authenticateToken, paymentController.getUserPaymentMethods);
-router.post("/methods", authenticateToken, paymentController.addPaymentMethod);
-router.delete("/methods/:id", authenticateToken, paymentController.deletePaymentMethod);
+// Payment methods routes
+router.get("/methods/:userId", authenticateToken, requireRole("customer"), paymentController.getUserPaymentMethods);
+router.post("/methods", authenticateToken, requireRole("customer"), paymentController.addPaymentMethod);
+router.delete("/methods/:id", authenticateToken, requireRole("customer"), paymentController.deletePaymentMethod);
 
 module.exports = router;

@@ -80,19 +80,16 @@ const getUserTransactions = async (req, res) => {
 const payTransaction = async (req, res) => {
     try {
         const { id } = req.params;
-        const buyer_id = req.user ? req.user.userId : req.body.buyer_id;
-        const { payment_method_type, payment_method_id, address_id } = req.body;
-
-        if (!buyer_id) {
-            return res.status(400).json({ error: "buyer_id is required" });
-        }
+        const buyer_id = req.user.userId;
+        const { payment_method_type, payment_method_id, address_id, delivery_address_note } = req.body;
 
         const result = await transactionModel.processPayment({
             txnId: id,
             buyerId: buyer_id,
             paymentMethodType: payment_method_type,
             paymentMethodId: payment_method_id,
-            addressId: address_id
+            addressId: address_id,
+            deliveryAddressNote: delivery_address_note
         });
 
         if (result.error) {

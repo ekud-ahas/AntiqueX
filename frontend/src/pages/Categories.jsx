@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { authFetch } from "../utils/api";
 import "../App.css";
 import "./Categories.css";
 
@@ -25,12 +26,8 @@ function Categories() {
     const [adminError, setAdminError] = useState("");
     const [adminLoading, setAdminLoading] = useState(false);
 
-    useEffect(() => {
-        fetchCategories();
-    }, []);
-
-    const fetchCategories = () => {
-        fetch("http://localhost:5000/api/categories")
+    function fetchCategories() {
+        fetch("/api/categories")
             .then((response) => {
                 if (!response.ok) {
                     throw new Error("Failed to fetch categories");
@@ -46,7 +43,11 @@ function Categories() {
                 setError("Could not load categories. Please make sure the backend is running.");
                 setLoading(false);
             });
-    };
+    }
+
+    useEffect(() => {
+        fetchCategories();
+    }, []);
 
     const handleCreateCategory = async (e) => {
         e.preventDefault();
@@ -60,7 +61,7 @@ function Categories() {
 
         setAdminLoading(true);
         try {
-            const res = await fetch("http://localhost:5000/api/categories", {
+            const res = await authFetch("/api/categories", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
@@ -92,7 +93,7 @@ function Categories() {
         setAdminMsg("");
         setAdminError("");
         try {
-            const res = await fetch(`http://localhost:5000/api/categories/${cat.category_id}`, {
+            const res = await authFetch(`/api/categories/${cat.category_id}`, {
                 method: "DELETE"
             });
             const data = await res.json();

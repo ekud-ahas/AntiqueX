@@ -72,77 +72,37 @@ const getAuction = async (req, res) => {
     }
 };
 
-// Place a bid
+// Place a bid (Protected, Customer only)
 const placeBid = async (req, res) => {
     try {
         const { id } = req.params;
-        const bidder_id = req.user ? req.user.userId : req.body.bidder_id;
+        const bidder_id = req.user.userId;
         const { bid_amount } = req.body;
 
-        if (!bidder_id || !bid_amount) {
+        if (!bid_amount || isNaN(Number(bid_amount)) || Number(bid_amount) <= 0) {
             return res.status(400).json({
-                error: "Bidder ID and bid amount are required"
+                error: "A valid positive bid amount is required"
             });
         }
 
-        // Find auction by auction_id OR item_id
-        let auction = await auctionModel.getAuctionForBidding(id);
-
-        if (!auction) {
-            const item = await auctionModel.getItemPriceInfo(id);
-
-            if (!item) {
-                return res.status(404).json({
-                    error: "Auction not found"
-                });
-            }
-
-            const calculatedMinInc = Math.max(100, Math.round((Number(item.starting_price) * 0.05) / 100) * 100);
-            const newAuction = await auctionModel.upsertActiveAuction(item.item_id, calculatedMinInc);
-
-            auction = {
-                ...newAuction,
-                starting_price: item.starting_price
-            };
-        }
-
-        if (auction.status !== "active") {
-            return res.status(400).json({
-                error: `Auction is not active (current status: ${auction.status})`
-            });
-        }
-
-        if (Number(auction.seller_id) === Number(bidder_id)) {
-            return res.status(400).json({
-                error: "Sellers are prohibited from bidding on their own listings."
-            });
-        }
-
-        const highestBid = await auctionModel.getHighestBidAmount(auction.auction_id);
-        const startingPrice = Number(auction.starting_price);
-        const minIncrement = Number(auction.min_increment);
-
-        const minimumBid = highestBid === 0
-            ? startingPrice
-            : highestBid + minIncrement;
-
-        if (Number(bid_amount) < minimumBid) {
-            return res.status(400).json({
-                error: `Bid must be at least ৳${minimumBid.toLocaleString()}`
-            });
-        }
-
-        const newBid = await auctionModel.insertBid(auction.auction_id, bidder_id, Number(bid_amount));
+        const newBid = await auctionModel.placeBidWithLock({
+            id,
+            bidderId: bidder_id,
+            bidAmount: Number(bid_amount)
+        });
 
         res.status(201).json({
             message: "Bid placed successfully",
-            bid: newBid
+            bid: {
+                bid_amount: newBid.bid_amount,
+                bid_time: newBid.bid_time
+            }
         });
 
     } catch (error) {
         console.error("PLACE BID ERROR:", error);
-        res.status(500).json({
-            error: "Failed to place bid"
+        res.status(error.statusCode || 500).json({
+            error: error.message || "Failed to place bid"
         });
     }
 };

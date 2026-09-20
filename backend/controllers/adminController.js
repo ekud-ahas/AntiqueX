@@ -86,13 +86,19 @@ const toggleAuctionStatus = async (req, res) => {
         const { id } = req.params;
         const { status } = req.body;
 
-        if (!["scheduled", "active", "ended", "cancelled"].includes(status)) {
-            return res.status(400).json({ error: "Invalid auction status" });
+        if (!["active", "cancelled"].includes(status)) {
+            return res.status(400).json({ error: "Auction moderation only supports 'active' or 'cancelled' status" });
         }
 
-        const updatedAuction = await adminStatsModel.updateAuctionStatus(id, status);
+        const updatedAuction = status === "cancelled"
+            ? await adminStatsModel.cancelAuctionAndRefundEscrow(id)
+            : await adminStatsModel.reactivateAuctionWithoutBids(id);
         if (!updatedAuction) {
-            return res.status(404).json({ error: "Auction not found" });
+            return res.status(400).json({
+                error: status === "active"
+                    ? "Only a cancelled auction with no bid history can be restored."
+                    : "Auction not found"
+            });
         }
 
         res.json({
@@ -101,7 +107,7 @@ const toggleAuctionStatus = async (req, res) => {
         });
     } catch (error) {
         console.error("TOGGLE AUCTION STATUS ERROR:", error);
-        res.status(500).json({ error: "Failed to update auction status" });
+        res.status(error.statusCode || 500).json({ error: error.message || "Failed to update auction status" });
     }
 };
 

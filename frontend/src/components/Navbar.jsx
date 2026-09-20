@@ -8,9 +8,13 @@ function Navbar() {
 
     const handleLogout = async () => {
         try {
-            await fetch("http://localhost:5000/api/auth/logout", { method: "POST" });
+            const token = localStorage.getItem("token");
+            await fetch("/api/auth/logout", {
+                method: "POST",
+                headers: token ? { "Authorization": `Bearer ${token}` } : {}
+            });
         } catch {
-            // Ignore failure on logout
+            // Ignore network failure on logout
         }
         localStorage.removeItem("user");
         localStorage.removeItem("token");
@@ -41,6 +45,7 @@ function Navbar() {
                             <NavLink to="/purchases" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Orders</NavLink>
                             <NavLink to="/wallet" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Wallet</NavLink>
                             <NavLink to="/watchlist" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Watchlist</NavLink>
+                            <NavLink to="/notifications" className={({ isActive }) => isActive ? "nav-link active" : "nav-link"}>Notifications</NavLink>
                         </>
                     )}
 

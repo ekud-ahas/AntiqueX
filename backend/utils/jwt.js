@@ -5,8 +5,12 @@ require("dotenv").config({
     path: path.join(__dirname, "../.env")
 });
 
-const JWT_SECRET = process.env.JWT_SECRET || "antiquex_default_fallback_secret_key_2026";
+const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "7d";
+
+if (!JWT_SECRET) {
+    throw new Error("JWT_SECRET must be set in backend/.env");
+}
 
 /**
  * Generate a signed JWT token

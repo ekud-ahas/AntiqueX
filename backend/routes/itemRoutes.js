@@ -2,7 +2,7 @@ const express = require("express");
 const router = express.Router();
 
 const upload = require("../middleware/upload");
-const { authenticateToken, optionalAuth } = require("../middleware/authMiddleware");
+const { authenticateToken, requireRole, optionalAuth } = require("../middleware/authMiddleware");
 
 const {
     getItems,
@@ -21,7 +21,7 @@ router.get("/:id", getItemById);
 router.get("/:id/images", getItemImages);
 
 // Protected endpoints (Requires Authentication & Ownership)
-router.post("/", authenticateToken, upload.single("image"), createItem);
+router.post("/", authenticateToken, requireRole("customer"), upload.single("image"), createItem);
 router.put("/:id", authenticateToken, updateItem);
 router.delete("/:id", authenticateToken, deleteItem);
 router.post("/:id/images", authenticateToken, addItemImage);

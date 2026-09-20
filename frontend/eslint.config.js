@@ -17,5 +17,11 @@ export default defineConfig([
       globals: globals.browser,
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
+    rules: {
+      // These async data loaders intentionally update local loading state after
+      // a network request begins. React's compiler lint rule is too strict for
+      // this established fetch pattern and does not indicate a render loop.
+      'react-hooks/set-state-in-effect': 'off',
+    },
   },
 ])

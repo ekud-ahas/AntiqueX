@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
+import { authFetch } from "../utils/api";
 import "../App.css";
 import "./SellItem.css";
 
@@ -52,8 +53,8 @@ function EditItem() {
   const loadItem = async () => {
     try {
       const [itemRes, categoriesRes] = await Promise.all([
-        fetch(`http://localhost:5000/items/${id}`),
-        fetch("http://localhost:5000/api/categories"),
+        fetch(`/items/${id}`),
+        fetch("/api/categories"),
       ]);
 
       const itemData = await itemRes.json();
@@ -137,7 +138,7 @@ function EditItem() {
         payload.auction_duration = Number(form.auction_duration);
       }
 
-      const response = await fetch(`http://localhost:5000/items/${id}`, {
+      const response = await authFetch(`/items/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -162,12 +163,10 @@ function EditItem() {
 
   const handleDeleteImage = async (img_id) => {
     try {
-      const response = await fetch(
-        `http://localhost:5000/items/${id}/images/${img_id}`,
+      const response = await authFetch(
+        `/items/${id}/images/${img_id}`,
         {
           method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ seller_id: user.user_id }),
         }
       );
 
@@ -187,13 +186,12 @@ function EditItem() {
     if (!newImageUrl.trim()) return;
 
     try {
-      const response = await fetch(
-        `http://localhost:5000/items/${id}/images`,
+      const response = await authFetch(
+        `/items/${id}/images`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            seller_id: user.user_id,
             img_url: newImageUrl.trim(),
           }),
         }
@@ -416,7 +414,7 @@ function EditItem() {
                   <img
                     src={
                       img.img_url?.startsWith("/uploads/")
-                        ? `http://localhost:5000${img.img_url}`
+                        ? `${img.img_url}`
                         : img.img_url
                     }
                     alt=""

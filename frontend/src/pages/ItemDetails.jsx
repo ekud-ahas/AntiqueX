@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Link, useParams } from "react-router-dom";
 import WatchlistButton from "../components/WatchlistButton";
+import { authFetch } from "../utils/api";
 import "../App.css";
 import "./ItemDetails.css";
 
@@ -34,7 +35,7 @@ function ItemDetails() {
     const fetchAuction = async () => {
         try {
             const response = await fetch(
-                `http://localhost:5000/api/auctions/${id}`
+                `/api/auctions/${id}`
             );
 
             const data = await response.json();
@@ -46,7 +47,7 @@ function ItemDetails() {
             setAuction(data);
 
             fetch(
-                `http://localhost:5000/items/${data.item_id}/images`
+                `/items/${data.item_id}/images`
             )
                 .then((res) => (res.ok ? res.json() : []))
                 .then((imgData) => setImages(imgData))
@@ -136,15 +137,11 @@ function ItemDetails() {
         setSubmittingBid(true);
 
         try {
-            const response = await fetch(
-                `http://localhost:5000/api/auctions/${id}/bids`,
+            const response = await authFetch(
+                `/api/auctions/${id}/bids`,
                 {
                     method: "POST",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
                     body: JSON.stringify({
-                        bidder_id: currentUser.user_id,
                         bid_amount: Number(bidAmount),
                     }),
                 }
@@ -212,7 +209,7 @@ function ItemDetails() {
                                 className="main-image"
                                 src={
                                     activeImage.startsWith("/uploads/")
-                                        ? `http://localhost:5000${activeImage}`
+                                        ? `${activeImage}`
                                         : activeImage
                                 }
                                 alt={auction.title}
@@ -232,7 +229,7 @@ function ItemDetails() {
                                     className={`thumbnail ${selectedImageIndex === idx ? "active" : ""}`}
                                     src={
                                         img.img_url?.startsWith("/uploads/")
-                                            ? `http://localhost:5000${img.img_url}`
+                                            ? `${img.img_url}`
                                             : img.img_url
                                     }
                                     alt=""
@@ -427,9 +424,20 @@ function ItemDetails() {
                     {!isEnded && auction.status === "active" ? (
                         <div className="bid-section">
                             <h2>Place Your Bid</h2>
-                            <p style={{ margin: "0 0 12px", fontSize: "13px", color: "var(--muted)" }}>
+                            <p style={{ margin: "0 0 8px", fontSize: "13px", color: "var(--muted)" }}>
                                 Next minimum bid: <strong>৳{minAllowedBid.toLocaleString()}</strong> (must increase by at least ৳{minInc.toLocaleString()})
                             </p>
+                            <div style={{
+                                background: "#f0f7ff",
+                                border: "1px solid #cce3f5",
+                                borderRadius: "6px",
+                                padding: "8px 12px",
+                                fontSize: "12px",
+                                color: "#1b6ca8",
+                                marginBottom: "14px"
+                            }}>
+                                🛡️ <strong>Escrow Pre-Funded Bidding:</strong> Your bid amount will be held from your wallet. If you are outbid, it is immediately refunded back to your wallet in full!
+                            </div>
 
                             {/* Quick Bid Chips */}
                             <div className="quick-bids-container">

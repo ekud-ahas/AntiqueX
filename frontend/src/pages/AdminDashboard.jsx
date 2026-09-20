@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import "./AdminDashboard.css";
 
@@ -26,22 +26,18 @@ function AdminDashboard() {
     // Auth header used by every API call
     const authHeader = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
 
-    useEffect(() => {
-        if (!user || !isAdmin) return;
-        fetchAllAdminData();
-    }, []);
-
-    const fetchAllAdminData = async () => {
+    const fetchAllAdminData = useCallback(async () => {
         setLoading(true);
         try {
+            const requestHeaders = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
             // Stats and items are available to both roles
             const requests = [
-                fetch("http://localhost:5000/api/admin/stats", { headers: authHeader }),
-                fetch("http://localhost:5000/api/admin/items",  { headers: authHeader })
+                fetch("/api/admin/stats", { headers: requestHeaders }),
+                fetch("/api/admin/items",  { headers: requestHeaders })
             ];
             // Users endpoint is admin-only — don't fetch for moderators
             if (isFullAdmin) {
-                requests.push(fetch("http://localhost:5000/api/admin/users", { headers: authHeader }));
+                requests.push(fetch("/api/admin/users", { headers: requestHeaders }));
             }
 
             const [statsRes, itemsRes, usersRes] = await Promise.all(requests);
@@ -60,7 +56,12 @@ function AdminDashboard() {
             setError(err.message);
             setLoading(false);
         }
-    };
+    }, [isFullAdmin, token]);
+
+    useEffect(() => {
+        if (!isAdmin) return;
+        void fetchAllAdminData();
+    }, [fetchAllAdminData, isAdmin]);
 
     // User status toggle handler (admin only)
     const handleToggleUserStatus = async (targetUser) => {
@@ -75,7 +76,7 @@ function AdminDashboard() {
         setActionLoading(true);
         setActionMsg("");
         try {
-            const res = await fetch(`http://localhost:5000/api/admin/users/${targetUser.user_id}/status`, {
+            const res = await fetch(`/api/admin/users/${targetUser.user_id}/status`, {
                 method: "PATCH",
                 headers: authHeader,
                 body: JSON.stringify({ status: newStatus })
@@ -108,7 +109,7 @@ function AdminDashboard() {
         setActionLoading(true);
         setActionMsg("");
         try {
-            const res = await fetch(`http://localhost:5000/api/admin/auctions/${item.auction_id}/status`, {
+            const res = await fetch(`/api/admin/auctions/${item.auction_id}/status`, {
                 method: "PATCH",
                 headers: authHeader,
                 body: JSON.stringify({ status: newStatus })

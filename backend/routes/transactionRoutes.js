@@ -6,7 +6,7 @@ const { authenticateToken, requireRole } = require("../middleware/authMiddleware
 // Protected Transaction APIs
 router.get("/:id", authenticateToken, transactionController.getTransactionById);
 router.get("/user/:userId", authenticateToken, transactionController.getUserTransactions);
-router.post("/:id/pay", authenticateToken, transactionController.payTransaction);
+router.post("/:id/pay", authenticateToken, requireRole("customer"), transactionController.payTransaction);
 
 // Admin-only: closing an auction is a privileged operation.
 // Moderators can view/moderate auctions via adminRoutes, but only an admin

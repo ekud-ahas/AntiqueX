@@ -31,7 +31,7 @@ function Items() {
     const [sortBy, setSortBy] = useState("ending_soon");
 
     useEffect(() => {
-        fetch("http://localhost:5000/items")
+        fetch("/items")
             .then((res) => {
                 if (!res.ok) {
                     throw new Error("Failed to load items");
@@ -241,7 +241,7 @@ function Items() {
                                             className="item-image"
                                             src={
                                                 item.thumbnail_url?.startsWith("/uploads/")
-                                                    ? `http://localhost:5000${item.thumbnail_url}`
+                                                    ? `${item.thumbnail_url}`
                                                     : item.thumbnail_url
                                             }
                                             alt={item.title}

@@ -181,3 +181,13 @@ CREATE TABLE watchlist (
     date TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (user_id, item_id)
 );
+
+-- 19. REVOKED TOKENS (For secure server-side logout & token invalidation per BUET Guideline §3.1)
+CREATE TABLE IF NOT EXISTS revoked_tokens (
+    token_id SERIAL PRIMARY KEY,
+    token TEXT NOT NULL UNIQUE,
+    revoked_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_revoked_tokens_token ON revoked_tokens(token);

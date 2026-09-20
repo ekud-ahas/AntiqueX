@@ -15,6 +15,7 @@ import EditItem from "./pages/EditItem";
 import Wallet from "./pages/Wallet";
 import Purchases from "./pages/Purchases";
 import AdminDashboard from "./pages/AdminDashboard";
+import Notifications from "./pages/Notifications";
 
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
         <Route path="/categories" element={<Categories />} />
         <Route path="/categories/:id" element={<CategoryItems />} />
         <Route path="/watchlist" element={<Watchlist />} />
+        <Route path="/notifications" element={<Notifications />} />
         <Route path="/sell" element={<SellItem />} />
         <Route path="/my-items" element={<MyItems />} />
         <Route path="/my-items/:id/edit" element={<EditItem />} />

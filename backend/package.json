@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "db:test": "node test-db.js",
+    "test": "node test/test-comprehensive-fixes.js",
+    "db:test": "node test/test-db.js",
     "db:init": "node init-db.js",
     "dev": "nodemon server.js"
   },

@@ -11,6 +11,7 @@ const transactionRoutes = require("./routes/transactionRoutes");
 const walletRoutes = require("./routes/walletRoutes");
 const paymentRoutes = require("./routes/paymentRoutes");
 const adminRoutes = require("./routes/adminRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 const app = express();
 
@@ -47,6 +48,9 @@ app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/transactions", transactionRoutes);
 app.use("/api/wallet", walletRoutes);
 app.use("/api/payments", paymentRoutes);
+
+// Notification APIs
+app.use("/api/notifications", notificationRoutes);
 
 // Admin APIs
 app.use("/api/admin", adminRoutes);

@@ -1,4 +1,5 @@
 const bcrypt = require("bcrypt");
+const pool = require("../config/db");
 const userModel = require("../models/userModel");
 const adminModel = require("../models/adminModel");
 const { generateToken } = require("../utils/jwt");
@@ -54,6 +55,14 @@ const register = async (req, res) => {
         if (existingAdmin) {
             return res.status(409).json({
                 error: "Email is already registered"
+            });
+        }
+
+        // Check if username is reserved by an admin
+        const existingAdminUsername = await adminModel.findByUsername(username);
+        if (existingAdminUsername) {
+            return res.status(409).json({
+                error: "Username is already reserved"
             });
         }
 
@@ -191,11 +200,28 @@ const login = async (req, res) => {
     }
 };
 
-// Logout endpoint
+// Logout endpoint with server-side token invalidation per BUET Guideline §3.1
 const logout = async (req, res) => {
-    res.json({
-        message: "Logged out successfully"
-    });
+    try {
+        const token = req.token;
+        const expiresAt = new Date(req.user.exp * 1000);
+
+        await pool.query(
+            `INSERT INTO revoked_tokens (token, expires_at)
+             VALUES ($1, $2)
+             ON CONFLICT (token) DO NOTHING`,
+            [token, expiresAt]
+        );
+
+        res.json({
+            message: "Logged out successfully and token invalidated"
+        });
+    } catch (error) {
+        console.error("LOGOUT ERROR:", error);
+        res.status(500).json({
+            error: "Failed to logout"
+        });
+    }
 };
 
 // Get authenticated user profile

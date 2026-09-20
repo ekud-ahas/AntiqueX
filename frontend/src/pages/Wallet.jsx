@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { authFetch } from "../utils/api";
 import "../App.css";
 import "./Wallet.css";
 
@@ -26,6 +27,9 @@ function Wallet() {
 
     // Forms
     const [depositAmount, setDepositAmount] = useState("");
+    const [depositMethod, setDepositMethod] = useState("bkash");
+    const [accountNumber, setAccountNumber] = useState("01712345678");
+    const [gatewayPin, setGatewayPin] = useState("1234");
     const [withdrawAmount, setWithdrawAmount] = useState("");
     const [newMethodName, setNewMethodName] = useState("");
 
@@ -37,8 +41,8 @@ function Wallet() {
         if (!user) return;
         try {
             const [walletRes, methodsRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/wallet/${user.user_id}`),
-                fetch(`http://localhost:5000/api/payments/methods/${user.user_id}`)
+                authFetch(`http://localhost:5000/api/wallet/${user.user_id}`),
+                authFetch(`http://localhost:5000/api/payments/methods/${user.user_id}`)
             ]);
 
             const walletData = await walletRes.json();
@@ -74,19 +78,22 @@ function Wallet() {
 
         setActionLoading(true);
         try {
-            const res = await fetch("http://localhost:5000/api/wallet/deposit", {
+            const res = await authFetch("http://localhost:5000/api/wallet/deposit", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    user_id: user.user_id,
-                    amount: amount
+                    amount: amount,
+                    method: depositMethod,
+                    accountNumber: accountNumber,
+                    pin: gatewayPin
                 })
             });
 
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Deposit failed");
 
-            setMessage(`🎉 Successfully deposited ৳${amount.toLocaleString()} into your wallet!`);
+            const ref = data.gateway?.gatewayTxnId ? ` (Ref: ${data.gateway.gatewayTxnId})` : "";
+            setMessage(`🎉 Successfully deposited ৳${amount.toLocaleString()} via ${depositMethod.toUpperCase()} Gateway!${ref}`);
             setIsError(false);
             setDepositAmount("");
             await fetchWalletData();
@@ -119,11 +126,10 @@ function Wallet() {
 
         setActionLoading(true);
         try {
-            const res = await fetch("http://localhost:5000/api/wallet/withdraw", {
+            const res = await authFetch("http://localhost:5000/api/wallet/withdraw", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    user_id: user.user_id,
                     amount: amount
                 })
             });
@@ -150,11 +156,10 @@ function Wallet() {
 
         setActionLoading(true);
         try {
-            const res = await fetch("http://localhost:5000/api/payments/methods", {
+            const res = await authFetch("http://localhost:5000/api/payments/methods", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    user_id: user.user_id,
                     method_name: newMethodName.trim()
                 })
             });
@@ -176,10 +181,8 @@ function Wallet() {
 
     const handleDeleteMethod = async (methodId) => {
         try {
-            const res = await fetch(`http://localhost:5000/api/payments/methods/${methodId}`, {
+            const res = await authFetch(`http://localhost:5000/api/payments/methods/${methodId}`, {
                 method: "DELETE",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ user_id: user.user_id })
             });
 
             if (!res.ok) throw new Error("Failed to delete payment method");
@@ -290,6 +293,34 @@ function Wallet() {
 
                         <form onSubmit={handleDeposit} className="action-form">
                             <div className="form-group">
+                                <label>Select Payment Gateway Provider *</label>
+                                <div style={{ display: "flex", gap: "10px", marginTop: "6px", marginBottom: "14px" }}>
+                                    {[
+                                        { id: "bkash", name: "bKash", icon: "📱" },
+                                        { id: "nagad", name: "Nagad", icon: "⚡" },
+                                        { id: "card", name: "Visa / Master", icon: "💳" }
+                                    ].map(gw => (
+                                        <button
+                                            key={gw.id}
+                                            type="button"
+                                            onClick={() => setDepositMethod(gw.id)}
+                                            style={{
+                                                flex: 1,
+                                                padding: "10px",
+                                                border: depositMethod === gw.id ? "2px solid #2980b9" : "1px solid #ddd",
+                                                borderRadius: "6px",
+                                                background: depositMethod === gw.id ? "#f0f7ff" : "#fff",
+                                                fontWeight: depositMethod === gw.id ? "bold" : "normal",
+                                                cursor: "pointer"
+                                            }}
+                                        >
+                                            {gw.icon} {gw.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="form-group">
                                 <label htmlFor="depositAmount">Amount (৳) *</label>
                                 <input
                                     id="depositAmount"
@@ -303,8 +334,31 @@ function Wallet() {
                                 />
                             </div>
 
+                            <div style={{ display: "flex", gap: "12px" }}>
+                                <div className="form-group" style={{ flex: 2 }}>
+                                    <label htmlFor="accountNumber">{depositMethod === "card" ? "Card Number" : "Mobile Wallet Number"}</label>
+                                    <input
+                                        id="accountNumber"
+                                        type="text"
+                                        value={accountNumber}
+                                        onChange={(e) => setAccountNumber(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <label htmlFor="gatewayPin">{depositMethod === "card" ? "CVV" : "Mock PIN"}</label>
+                                    <input
+                                        id="gatewayPin"
+                                        type="password"
+                                        value={gatewayPin}
+                                        onChange={(e) => setGatewayPin(e.target.value)}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
                             <button type="submit" className="btn btn-primary" disabled={actionLoading}>
-                                {actionLoading ? "Processing…" : `Confirm Deposit of ৳${Number(depositAmount || 0).toLocaleString()}`}
+                                {actionLoading ? "Processing via Gateway…" : `Pay via ${depositMethod.toUpperCase()} (৳${Number(depositAmount || 0).toLocaleString()})`}
                             </button>
                         </form>
                     </div>

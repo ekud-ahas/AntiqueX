@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { authFetch } from "../utils/api";
 import "../App.css";
 import "./Watchlist.css";
 
@@ -13,7 +14,7 @@ function Watchlist() {
   const fetchWatchlist = () => {
     setLoading(true);
 
-    fetch(`http://localhost:5000/api/watchlist/${user.user_id}`)
+    authFetch(`/api/watchlist/${user.user_id}`)
       .then((response) => {
         if (!response.ok) {
           throw new Error("Failed to fetch watchlist");
@@ -42,13 +43,12 @@ function Watchlist() {
 
   const handleRemove = async (item_id) => {
     try {
-      const response = await fetch("http://localhost:5000/api/watchlist", {
+      const response = await authFetch("/api/watchlist", {
         method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          user_id: user.user_id,
           item_id,
         }),
       });
@@ -105,7 +105,7 @@ function Watchlist() {
                     className="watchlist-img"
                     src={
                       entry.thumbnail_url?.startsWith("/uploads/")
-                        ? `http://localhost:5000${entry.thumbnail_url}`
+                        ? `${entry.thumbnail_url}`
                         : entry.thumbnail_url
                     }
                     alt={entry.title}

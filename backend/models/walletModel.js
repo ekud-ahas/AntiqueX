@@ -41,7 +41,7 @@ const getOrCreateWallet = async (userId) => {
  */
 const getWalletTransactions = async (walletId, limit = 50) => {
     const query = `
-        SELECT wallet_txn_id, wallet_id, type, amount, time AS transaction_time
+        SELECT type, amount, time AS transaction_time
         FROM wallet_transactions
         WHERE wallet_id = $1
         ORDER BY time DESC
@@ -54,7 +54,7 @@ const getWalletTransactions = async (walletId, limit = 50) => {
 /**
  * Deposit funds into wallet (with transaction)
  */
-const depositFunds = async (userId, depositAmount) => {
+const depositFunds = async (userId, depositAmount, gatewayMeta = {}) => {
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
@@ -83,13 +83,16 @@ const depositFunds = async (userId, depositAmount) => {
             [wallet.wallet_id, depositAmount]
         );
 
+        const providerLabel = gatewayMeta.provider ? ` via ${gatewayMeta.provider.toUpperCase()}` : "";
+        const refLabel = gatewayMeta.gatewayTxnId ? ` (Ref: ${gatewayMeta.gatewayTxnId})` : "";
+
         // Notify user
         await client.query(
             `
             INSERT INTO notifications (user_id, type, message)
             VALUES ($1, 'wallet_deposit', $2)
             `,
-            [userId, `Successfully deposited ৳${depositAmount.toLocaleString()} into your AntiqueX wallet.`]
+            [userId, `Successfully deposited ৳${depositAmount.toLocaleString()} into your AntiqueX wallet${providerLabel}${refLabel}.`]
         );
 
         await client.query("COMMIT");
