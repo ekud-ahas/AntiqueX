@@ -93,20 +93,29 @@ For a separately hosted backend, add `frontend/.env` with `VITE_API_BASE_URL=htt
 
 ## 🧪 Automated Verification Test Suite
 
-A standalone test suite is provided to verify all mandatory requirements under Section 3 of the 60% guidelines without manual clicking:
+Standalone test suites are provided to verify requirements without manual clicking:
 
 ```bash
 cd backend
+# 1. Full 60% Milestone Guidelines Suite (12 tests)
 node test/test-comprehensive-fixes.js
+
+# 2. Auction Cancellation & Escrow Protection Test (12 tests)
+node test/test-auction-cancellation.js
+
+# 3. Auth & RBAC Security Verification (8 tests)
+node test/verify-auth.js
 ```
 
-### What this test verifies:
+### What these tests verify:
 1. **Sign-up & Login**: Registration and JWT generation.
-2. **Server-Side Token Invalidation (§3.1)**: User logs out; the invalidated token immediately receives `401 Unauthorized` on protected endpoints.
+2. **Server-Side Token Invalidation (§3.1)**: User logs out; the invalidated token immediately receives `401 Unauthorized` on protected endpoints via `revoked_tokens`.
 3. **Cross-Role Access Blocking (§3.2)**: Admin attempting to access customer wallet deposit receives `403 Forbidden`; Customer attempting admin category creation receives `403 Forbidden`.
-4. **Item Deletion Guardrails**: Deleting an item with active bids is rejected.
-5. **ACID Bidding Race Condition Test (§3.3)**: Simulates simultaneous identical bids using `Promise.all`; verifies row-level lock allows only one winning bid.
-6. **Notifications**: Verifies notification retrieval and status updates.
+4. **Object Ownership**: Customers cannot access or modify wallets or resources belonging to another user.
+5. **Item Deletion Guardrails**: Deleting an item with active bids is rejected.
+6. **ACID Bidding Race Condition Test (§3.3)**: Simulates simultaneous identical bids using `Promise.all`; verifies row-level lock allows only one winning bid.
+7. **Auction Cancellation Escrow Protection**: Verifies that cancelling an auction refunds exclusively the active highest bidder's escrow and does not double-refund outbid bidders.
+8. **Notifications**: Verifies notification retrieval and status updates.
 
 ---
 

@@ -50,7 +50,7 @@ The application is structured into a modern decoupled architecture adhering to s
 ```
 
 ### 2.1 Backend Technology & Database Connection
-- **Runtime & Framework:** Node.js with Express.js.
+- **Runtime & Framework:** Node.js with Express.js (configured on port `5001` to prevent macOS AirPlay Receiver port `5000` collisions; Vite dev server proxies `/api`, `/items`, and `/uploads` to `5001`).
 - **Database Engine:** PostgreSQL.
 - **Driver / Connectivity:** Uses `pg` (`Pool` connection pool), ensuring high performance and connection lifecycle management without ad-hoc single connections.
 - **Strict Prohibition of ORM:** Per BUET CSE 216 course guidelines, **no Object-Relational Mapping (ORM) library is used**. Every database operation is performed using handwritten, optimized, raw SQL queries with parameterization (`$1, $2, ...`) to eliminate SQL injection vulnerabilities.
@@ -102,6 +102,11 @@ The database schema is derived directly from the provided Entity-Relationship Di
    - When an auction closes (`closeAuctionAndRecordWinner`), the winning bidder's held bid is transferred directly to the **Seller's wallet** (`UPDATE wallets SET balance = balance + $winning_bid`).
    - A `sale_proceeds` record is logged in `wallet_transactions`.
    - The transaction is marked `completed` and a delivery `shipments` record is automatically provisioned for the winning buyer's address.
+4. **Auction Cancellation & Escrow Protection (`cancelAuctionAndRefundEscrow`):**
+   - When an active auction is cancelled by an administrator or moderator (`PATCH /api/admin/auctions/:id/cancel`), the system queries strictly the single **current top bid** (`ORDER BY bid_amount DESC, bid_time ASC LIMIT 1`).
+   - Because outbid bidders were already refunded immediately at the moment of being outbid under Option A Escrow Bidding, **only the current leading bidder's held escrow is refunded** back into their wallet (`UPDATE wallets SET balance = balance + $top_bid_amount`).
+   - A single `auction_cancel_refund` record is logged in `wallet_transactions` and an alert notification is dispatched.
+   - If an auction is cancelled with zero bids, it cleanly transitions to `status = 'cancelled'` without touching any wallet balances.
 
 ### 3.3 Wallet & Mock Payment Gateway Server
 - **Simulated External Payment Gateway (`backend/services/mockPaymentGateway.js`):**
@@ -290,6 +295,8 @@ While the core functional requirements of the 60% evaluation are fully met, the 
 │ B9 │ External Payment Impersonation│ Medium (Financial)│ transactionModel.js / paymentModel.js   │
 │ B10│ Missing Customer Notifications│ Medium (Feature)  │ notificationModel.js / UI missing       │
 │ B11│ Frontend Missing Auth Headers │ High (UX / 401s)  │ §3.4 Minimal Frontend (api.js wrapper)  │
+│ B12│ Auction Cancel Escrow Refund │ Critical (Financial)│ adminStatsModel.js                     │
+│ B13│ macOS AirPlay Port 5000 Clash │ High (Infrastructure)│ backend .env / vite.config.js          │
 └────┴───────────────────────────────┴───────────────────┴─────────────────────────────────────────┘
 ```
 
@@ -374,8 +381,31 @@ While the core functional requirements of the 60% evaluation are fully met, the 
 ### Bug B11: Frontend Missing Authorization Headers (401 Errors) (§3.4)
 - **Problem**: Multiple React components used native `fetch()` without passing the `Authorization` header, triggering unexpected `401 Unauthorized` errors across the UI.
 - **Fix**:
-  - Created centralized [`frontend/src/utils/api.js`](file:///g:/CSE%20216%20DB%20Project/AntiqueX/frontend/src/utils/api.js) exporting `authFetch` and `api` helper methods.
+  - Created centralized `frontend/src/utils/api.js` exporting `authFetch` and `api` helper methods.
   - Refactored all protected pages (`ItemDetails`, `SellItem`, `EditItem`, `MyItems`, `Purchases`, `Wallet`, `Watchlist`, `Categories`, `Navbar`) to automatically inject `Authorization: Bearer <token>`.
+
+### Bug B12: Auction Cancellation Escrow Double-Refund Bug
+- **Problem**: When an active auction was cancelled by an admin or moderator (`cancelAuctionAndRefundEscrow`), the model queried **all** historical bids placed on the auction and iterated over every bid row, crediting the bid amounts back to bidders' wallets. Under Option A Escrow Bidding, outbid users are **already** refunded immediately at the instant they are outbid by another bidder. Consequently, looping over all historical bids issued duplicate refunds to every previous outbid bidder, multiplying money out of thin air and corrupting financial ledger balance invariants.
+- **Fix**:
+  - Modified `adminStatsModel.cancelAuctionAndRefundEscrow` to query strictly the single **current highest bid**:
+    ```sql
+    SELECT bid_id, bidder_id, bid_amount
+    FROM bids
+    WHERE auction_id = $1
+    ORDER BY bid_amount DESC, bid_time ASC
+    LIMIT 1
+    ```
+  - If a top bid exists, it locks that bidder's wallet with `FOR UPDATE`, credits back their held escrow, records a single `auction_cancel_refund` transaction in `wallet_transactions`, and sends an in-app alert.
+  - If no bids were placed on the auction, it cleanly marks the auction as `cancelled` without touching any wallet records.
+  - Added a 12-assertion automated test suite in `backend/test/test-auction-cancellation.js` verifying balance preservation before and after auction cancellation.
+
+### Bug B13: macOS AirPlay Port 5000 Collision & Backend Migration to Port 5001
+- **Problem**: On macOS (Monterey 12 and newer), the operating system's `ControlCenter` AirPlay Receiver daemon listens by default on port `5000` (`commplex-main`). When starting the Express server on port 5000, Express failed to bind with `EADDRINUSE: address already in use :::5000`, or proxy connections through Vite dev server (`:5173`) failed with `500 / ECONNREFUSED` producing "Could not connect to the server" errors on registration and login.
+- **Fix**:
+  - Migrated the Express backend server port to `5001` in `backend/.env` (`PORT=5001`).
+  - Updated Vite development server proxy configuration in `frontend/vite.config.js` to route `/api`, `/items`, and `/uploads` directly to `http://localhost:5001`.
+  - Replaced hardcoded `http://localhost:5000` references in `frontend/src/pages/Wallet.jsx` with relative `/api/...` endpoints.
+  - Updated automated test suites (`test-comprehensive-fixes.js`, `test-suspended-bid.js`) and `README.md` to reflect port 5001.
 
 ---
 
