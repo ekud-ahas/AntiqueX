@@ -16,7 +16,7 @@ const getWallet = async (req, res) => {
         const transactions = await walletModel.getWalletTransactions(wallet.wallet_id);
 
         res.json({
-            ...wallet,
+            balance: wallet.balance,
             transactions
         });
     } catch (error) {
@@ -58,9 +58,9 @@ const depositFunds = async (req, res) => {
 
         res.status(200).json({
             message: "Deposit successful",
-            gateway: gatewayRes,
-            wallet: result.wallet,
-            transaction: result.transaction
+            gateway_reference: gatewayRes.gatewayTxnId,
+            provider: gatewayRes.provider,
+            new_balance: result.wallet.balance
         });
     } catch (error) {
         console.error("DEPOSIT FUNDS ERROR:", error);
@@ -87,8 +87,7 @@ const withdrawFunds = async (req, res) => {
 
         res.status(200).json({
             message: "Withdrawal successful",
-            wallet: result.wallet,
-            transaction: result.transaction
+            new_balance: result.wallet.balance
         });
     } catch (error) {
         console.error("WITHDRAW FUNDS ERROR:", error);
