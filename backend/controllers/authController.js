@@ -200,7 +200,7 @@ const login = async (req, res) => {
     }
 };
 
-// Logout endpoint with server-side token invalidation per BUET Guideline §3.1
+// Logout endpoint with server-side token invalidation 
 const logout = async (req, res) => {
     try {
         const token = req.token;
