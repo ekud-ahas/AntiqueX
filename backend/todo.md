@@ -1,4 +1,4 @@
-1. data globally available kora, not locally, mane dhorlam onnno pc theke account banale seta amar pc theke access kora jai
+1. data globally available kora, not locally, mane dhorlam onnno pc theke account banale seta amar pc theke access kora jai -- eta korar dorkar nai, hassle beshi
 
 2. login korar por homepage update hoy na, reload kora lage, login register button thake jeta login korar por thakar kotha na
 
