@@ -184,6 +184,7 @@ const placeBidWithLock = async ({ id, bidderId, bidAmount }) => {
         const lockQuery = `
             SELECT
                 a.auction_id,
+                a.item_id,
                 a.min_increment,
                 a.status,
                 a.end_time,
@@ -365,6 +366,27 @@ const placeBidWithLock = async ({ id, bidderId, bidAmount }) => {
                     [
                         prevTopBid.bidder_id,
                         `You have been outbid on "${auction.title}". Your bid of BDT ${refundAmount.toLocaleString()} has been refunded to your wallet.`
+                    ]
+                );
+            }
+        }
+
+        // 9. Notify users who have this item in their watchlist (except the new bidder and previous bidder)
+        const excludeUserId = prevTopBid ? prevTopBid.bidder_id : null;
+        
+        const watchlistUsersRes = await client.query(
+            `SELECT user_id FROM watchlist WHERE item_id = $1 AND user_id != $2 AND ($3::int IS NULL OR user_id != $3::int)`,
+            [auction.item_id, bidderId, excludeUserId]
+        );
+
+        if (watchlistUsersRes.rows.length > 0) {
+            for (let row of watchlistUsersRes.rows) {
+                await client.query(
+                    `INSERT INTO notifications (user_id, type, message)
+                     VALUES ($1, 'watchlist_alert', $2)`,
+                    [
+                        row.user_id,
+                        `An item in your watchlist ("${auction.title}") just received a new bid of BDT ${Number(bidAmount).toLocaleString()}!`
                     ]
                 );
             }

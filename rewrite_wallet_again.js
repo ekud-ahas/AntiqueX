@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+const fs = require('fs');
+
+const jsxContent = `import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { authFetch } from "../utils/api";
 import "../App.css";
@@ -50,8 +52,8 @@ function Wallet() {
         if (!user) return;
         try {
             const [wRes, mRes] = await Promise.all([
-                authFetch(`/api/wallet/${user.user_id}`),
-                authFetch(`/api/payments/methods/${user.user_id}`)
+                authFetch(\`/api/wallet/\${user.user_id}\`),
+                authFetch(\`/api/payments/methods/\${user.user_id}\`)
             ]);
 
             if (wRes.ok) setWallet(await wRes.json());
@@ -109,7 +111,8 @@ function Wallet() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Deposit failed");
 
-            setSuccessMsg(`Successfully deposited ৳${amount.toLocaleString()}!`);
+            const ref = data.gateway_reference ? \` (Ref: \${data.gateway_reference})\` : "";
+            setSuccessMsg(\`Successfully deposited ৳\${amount.toLocaleString()}!\${ref}\`);
             setShowSuccessModal(true);
             
             setDepositAmount("");
@@ -148,7 +151,7 @@ function Wallet() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Withdrawal failed");
 
-            setSuccessMsg(`Successfully withdrew ৳${amount.toLocaleString()}!`);
+            setSuccessMsg(\`Successfully withdrew ৳\${amount.toLocaleString()}!\`);
             setShowSuccessModal(true);
             
             setWithdrawAmount("");
@@ -197,7 +200,7 @@ function Wallet() {
     const handleDeleteMethod = async (methodId) => {
         if (!window.confirm("Delete this saved payment method?")) return;
         try {
-            await authFetch(`/api/payments/methods/${methodId}`, { method: "DELETE" });
+            await authFetch(\`/api/payments/methods/\${methodId}\`, { method: "DELETE" });
             await fetchWalletData();
             if (selectedMethodId === String(methodId)) {
                 setSelectedMethodId("new");
@@ -241,25 +244,25 @@ function Wallet() {
                 {/* Top Tabs */}
                 <div className="wallet-tabs">
                     <button 
-                        className={`wallet-tab-btn ${activeTab === "overview" ? "active" : ""}`}
+                        className={\`wallet-tab-btn \${activeTab === "overview" ? "active" : ""}\`}
                         onClick={() => { setActiveTab("overview"); setMessage(""); }}
                     >
                         📊 Overview
                     </button>
                     <button 
-                        className={`wallet-tab-btn ${activeTab === "deposit" ? "active" : ""}`}
+                        className={\`wallet-tab-btn \${activeTab === "deposit" ? "active" : ""}\`}
                         onClick={() => { setActiveTab("deposit"); setMessage(""); }}
                     >
                         📥 Deposit Funds
                     </button>
                     <button 
-                        className={`wallet-tab-btn ${activeTab === "withdraw" ? "active" : ""}`}
+                        className={\`wallet-tab-btn \${activeTab === "withdraw" ? "active" : ""}\`}
                         onClick={() => { setActiveTab("withdraw"); setMessage(""); }}
                     >
                         📤 Withdraw Funds
                     </button>
                     <button 
-                        className={`wallet-tab-btn ${activeTab === "methods" ? "active" : ""}`}
+                        className={\`wallet-tab-btn \${activeTab === "methods" ? "active" : ""}\`}
                         onClick={() => { setActiveTab("methods"); setMessage(""); }}
                     >
                         💳 Saved Methods
@@ -309,8 +312,7 @@ function Wallet() {
                                                     <th>Activity Type</th>
                                                     <th>Amount</th>
                                                     <th>Date & Time</th>
-                                                    <th>Trx ID</th>
-                                                    
+                                                    <th>Log ID</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
@@ -319,7 +321,7 @@ function Wallet() {
                                                     return (
                                                         <tr key={tx.wallet_txn_id}>
                                                             <td>
-                                                                <span className={`type-badge ${tx.type}`}>
+                                                                <span className={\`type-badge \${tx.type}\`}>
                                                                     {tx.type === "deposit" && "📥 Deposit"}
                                                                     {tx.type === "withdrawal" && "📤 Withdrawal"}
                                                                     {tx.type === "payment" && "🛍️ Item Purchase"}
@@ -328,12 +330,11 @@ function Wallet() {
                                                                     {tx.type === "bid_refund" && "🔓 Escrow Refund"}
                                                                 </span>
                                                             </td>
-                                                            <td className={`amt-cell ${isCredit ? "credit" : "debit"}`}>
+                                                            <td className={\`amt-cell \${isCredit ? "credit" : "debit"}\`}>
                                                                 {isCredit ? "+" : "-"}৳{Number(tx.amount).toLocaleString()}
                                                             </td>
                                                             <td>{formatDateTime(tx.transaction_time)}</td>
-                                                            <td className="id-cell">{tx.trx_id}</td>
-                                                            
+                                                            <td className="id-cell">#{tx.wallet_txn_id}</td>
                                                         </tr>
                                                     );
                                                 })}
@@ -422,8 +423,8 @@ function Wallet() {
                                         id="depositAmount"
                                         type="number"
                                         className="wallet-input amount-input"
-                                        min="1"
-                                        step="any"
+                                        min="100"
+                                        step="100"
                                         placeholder="Enter amount to deposit"
                                         value={depositAmount}
                                         onChange={(e) => setDepositAmount(e.target.value)}
@@ -432,12 +433,12 @@ function Wallet() {
                                 </div>
 
                                 <button type="submit" className="btn btn-primary wallet-submit-btn" disabled={actionLoading}>
-                                    {actionLoading ? "Processing…" : `Confirm Deposit ৳${Number(depositAmount || 0).toLocaleString()}`}
+                                    {actionLoading ? "Processing…" : \`Confirm Deposit ৳\${Number(depositAmount || 0).toLocaleString()}\`}
                                 </button>
                             </form>
                             
                             {message && (
-                                <div className={`wallet-alert ${isError ? "alert-error" : "alert-success"}`}>
+                                <div className={\`wallet-alert \${isError ? "alert-error" : "alert-success"}\`}>
                                     {message}
                                 </div>
                             )}
@@ -506,9 +507,9 @@ function Wallet() {
                                             id="withdrawAmount"
                                             type="number"
                                             className="wallet-input amount-input"
-                                            min="1"
+                                            min="100"
                                             max={currentBalance}
-                                            step="any"
+                                            step="100"
                                             placeholder="Enter amount to withdraw"
                                             value={withdrawAmount}
                                             onChange={(e) => setWithdrawAmount(e.target.value)}
@@ -529,12 +530,12 @@ function Wallet() {
                                     className="btn btn-primary wallet-submit-btn"
                                     disabled={actionLoading || currentBalance <= 0}
                                 >
-                                    {actionLoading ? "Processing…" : `Confirm Withdrawal ৳${Number(withdrawAmount || 0).toLocaleString()}`}
+                                    {actionLoading ? "Processing…" : \`Confirm Withdrawal ৳\${Number(withdrawAmount || 0).toLocaleString()}\`}
                                 </button>
                             </form>
                             
                             {message && (
-                                <div className={`wallet-alert ${isError ? "alert-error" : "alert-success"}`}>
+                                <div className={\`wallet-alert \${isError ? "alert-error" : "alert-success"}\`}>
                                     {message}
                                 </div>
                             )}
@@ -550,7 +551,7 @@ function Wallet() {
                             </p>
 
                             {message && (
-                                <div className={`wallet-alert ${isError ? "alert-error" : "alert-success"}`} style={{ marginBottom: "20px" }}>
+                                <div className={\`wallet-alert \${isError ? "alert-error" : "alert-success"}\`} style={{ marginBottom: "20px" }}>
                                     {message}
                                 </div>
                             )}
@@ -648,3 +649,363 @@ function Wallet() {
 }
 
 export default Wallet;
+`;
+
+const cssContent = `/* Wallet.css */
+.wallet-page {
+    max-width: 900px;
+}
+
+.wallet-hero {
+    background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    border-radius: 12px;
+    color: white;
+    padding: 35px 40px;
+    margin-bottom: 30px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.wallet-hero-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.wallet-hero h1 {
+    margin: 0;
+    font-size: 32px;
+    font-weight: 700;
+}
+
+.wallet-balance-display {
+    text-align: right;
+}
+
+.balance-label {
+    display: block;
+    font-size: 14px;
+    opacity: 0.8;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 5px;
+}
+
+.balance-amount {
+    font-size: 36px;
+    font-weight: bold;
+    color: #ffd700;
+}
+
+.wallet-container {
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+.wallet-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    background: #f8fafc;
+}
+
+.wallet-tab-btn {
+    flex: 1;
+    padding: 18px 10px;
+    background: transparent;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-bottom: 3px solid transparent;
+}
+
+.wallet-tab-btn:hover {
+    background: #f1f5f9;
+    color: var(--text);
+}
+
+.wallet-tab-btn.active {
+    color: var(--primary);
+    border-bottom-color: var(--primary);
+    background: #fff;
+}
+
+.wallet-content-area {
+    padding: 30px 40px;
+    min-height: 400px;
+}
+
+.wallet-card-title {
+    font-size: 24px;
+    color: var(--text);
+    margin: 0 0 8px 0;
+}
+
+.wallet-card-desc {
+    color: var(--muted);
+    font-size: 15px;
+    margin: 0 0 25px 0;
+}
+
+.wallet-form-container {
+    max-width: 500px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.wallet-input, .wallet-select {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    font-size: 15px;
+    background: #fff;
+    transition: border-color 0.2s ease;
+}
+
+.wallet-input:focus, .wallet-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(41, 128, 185, 0.1);
+}
+
+.wallet-nested-form {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+}
+
+.amount-input-wrapper {
+    display: flex;
+    gap: 10px;
+}
+
+.amount-input-wrapper .amount-input {
+    flex: 1;
+}
+
+.max-btn {
+    padding: 0 20px;
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #475569;
+    font-weight: 600;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.max-btn:hover {
+    background: #e2e8f0;
+    color: var(--text);
+}
+
+.wallet-submit-btn {
+    width: 100%;
+    padding: 14px;
+    font-size: 16px;
+    font-weight: 600;
+    border-radius: 8px;
+    margin-top: 10px;
+}
+
+.wallet-alert {
+    padding: 15px;
+    border-radius: 8px;
+    margin-top: 20px;
+    font-weight: 500;
+}
+
+.alert-success {
+    background: #ecfdf5;
+    color: #065f46;
+    border: 1px solid #a7f3d0;
+}
+
+.alert-error {
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+}
+
+.saved-methods-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.saved-method-box {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.saved-method-box:hover {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    border-color: #cbd5e1;
+}
+
+.method-details {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.method-icon {
+    font-size: 24px;
+    background: #f1f5f9;
+    padding: 10px;
+    border-radius: 8px;
+}
+
+.method-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.method-text strong {
+    font-size: 16px;
+    color: var(--text);
+}
+
+.method-sub {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 2px;
+}
+
+.remove-method-btn {
+    background: none;
+    border: none;
+    color: #ef4444;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 12px;
+    border-radius: 6px;
+    transition: background 0.2s;
+}
+
+.remove-method-btn:hover {
+    background: #fef2f2;
+}
+
+/* History Table Styles */
+.styled-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+}
+
+.styled-table th, .styled-table td {
+    padding: 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+
+.styled-table th {
+    background: #f8fafc;
+    font-weight: 600;
+    color: var(--muted);
+    font-size: 14px;
+    text-transform: uppercase;
+}
+
+.type-badge {
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    background: #f1f5f9;
+    color: #475569;
+}
+
+.type-badge.deposit, .type-badge.sale_proceeds, .type-badge.bid_refund {
+    background: #dcfce7;
+    color: #166534;
+}
+
+.type-badge.withdrawal, .type-badge.payment, .type-badge.bid_escrow {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.amt-cell {
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.amt-cell.credit { color: #10b981; }
+.amt-cell.debit { color: #ef4444; }
+
+.wallet-modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(4px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: fadeIn 0.2s ease;
+}
+
+.wallet-modal-content {
+    background: #fff;
+    padding: 40px;
+    border-radius: 16px;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);
+    animation: slideUp 0.3s ease;
+}
+
+.modal-icon {
+    font-size: 60px;
+    margin-bottom: 20px;
+}
+
+.wallet-loading {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50vh;
+    font-size: 20px;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+`;
+
+fs.writeFileSync('frontend/src/pages/Wallet.jsx', jsxContent);
+fs.writeFileSync('frontend/src/pages/Wallet.css', cssContent);

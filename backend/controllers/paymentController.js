@@ -23,13 +23,13 @@ const getUserPaymentMethods = async (req, res) => {
 const addPaymentMethod = async (req, res) => {
     try {
         const user_id = req.user.userId;
-        const { method_name } = req.body;
+        const { method_name, provider, account_number, secret_code } = req.body;
 
         if (!user_id || !method_name || !method_name.trim()) {
             return res.status(400).json({ error: "Method name is required" });
         }
 
-        const newMethod = await paymentModel.addPaymentMethod(user_id, method_name.trim());
+        const newMethod = await paymentModel.addPaymentMethod(user_id, method_name.trim(), provider, account_number, secret_code);
 
         res.status(201).json({
             message: "Payment method added successfully",

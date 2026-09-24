@@ -40,7 +40,22 @@ const markAsRead = async (userId, notificationId = null) => {
     }
 };
 
+/**
+ * Create a new notification
+ */
+const createNotification = async (userId, type, message, customClient = null) => {
+    const client = customClient || pool;
+    const query = `
+        INSERT INTO notifications (user_id, type, message)
+        VALUES ($1, $2, $3)
+        RETURNING *
+    `;
+    const result = await client.query(query, [userId, type, message]);
+    return result.rows[0];
+};
+
 module.exports = {
+    createNotification,
     getUserNotifications,
     markAsRead
 };

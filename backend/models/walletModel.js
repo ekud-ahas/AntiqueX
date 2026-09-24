@@ -41,7 +41,7 @@ const getOrCreateWallet = async (userId) => {
  */
 const getWalletTransactions = async (walletId, limit = 50) => {
     const query = `
-        SELECT type, amount, time AS transaction_time
+        SELECT wallet_txn_id, trx_id, type, amount, time AS transaction_time
         FROM wallet_transactions
         WHERE wallet_id = $1
         ORDER BY time DESC

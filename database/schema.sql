@@ -40,7 +40,10 @@ CREATE TABLE addresses (
 CREATE TABLE payment_methods (
     method_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
-    method_name VARCHAR(50) NOT NULL
+    method_name VARCHAR(50) NOT NULL,
+    provider VARCHAR(50),
+    account_number VARCHAR(100),
+    secret_code VARCHAR(100)
 );
 
 -- 6. WALLETS
@@ -126,6 +129,7 @@ CREATE TABLE wallet_transactions (
     payment_method_id INT REFERENCES payment_methods(method_id) ON DELETE SET NULL,
     type VARCHAR(30) NOT NULL,
     amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
+    trx_id VARCHAR(50) UNIQUE DEFAULT ('TRX-' || upper(substr(md5(random()::text), 1, 8))),
     time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 

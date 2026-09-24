@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
+const fs = require('fs');
+
+const content = `import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { authFetch } from "../utils/api";
 import "../App.css";
-import "./Wallet.css";
 
 function formatDateTime(dateString) {
     if (!dateString) return "N/A";
@@ -31,9 +32,6 @@ function Wallet() {
 
     // Withdraw State
     const [withdrawAmount, setWithdrawAmount] = useState("");
-    const [withdrawSelectedMethodId, setWithdrawSelectedMethodId] = useState("new");
-    const [withdrawMethod, setWithdrawMethod] = useState("bkash");
-    const [withdrawAccount, setWithdrawAccount] = useState("");
 
     // Add Method State
     const [newMethodName, setNewMethodName] = useState("");
@@ -50,8 +48,8 @@ function Wallet() {
         if (!user) return;
         try {
             const [wRes, mRes] = await Promise.all([
-                authFetch(`/api/wallet/${user.user_id}`),
-                authFetch(`/api/payments/methods/${user.user_id}`)
+                authFetch(\`/api/wallet/\${user.user_id}\`),
+                authFetch(\`/api/payments/methods/\${user.user_id}\`)
             ]);
 
             if (wRes.ok) setWallet(await wRes.json());
@@ -109,7 +107,8 @@ function Wallet() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Deposit failed");
 
-            setSuccessMsg(`Successfully deposited ৳${amount.toLocaleString()}!`);
+            const ref = data.gateway_reference ? \` (Ref: \${data.gateway_reference})\` : "";
+            setSuccessMsg(\`Successfully deposited ৳\${amount.toLocaleString()}!\${ref}\`);
             setShowSuccessModal(true);
             
             setDepositAmount("");
@@ -128,7 +127,6 @@ function Wallet() {
         e.preventDefault();
         setMessage("");
         setIsError(false);
-        
         const amount = Number(withdrawAmount);
         if (isNaN(amount) || amount <= 0) {
             setMessage("Please enter a valid withdrawal amount.");
@@ -138,7 +136,6 @@ function Wallet() {
 
         setActionLoading(true);
         try {
-            // Using existing mock withdraw logic, just verifying the amount here
             const res = await authFetch("/api/wallet/withdraw", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -148,12 +145,11 @@ function Wallet() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Withdrawal failed");
 
-            setSuccessMsg(`Successfully withdrew ৳${amount.toLocaleString()}!`);
-            setShowSuccessModal(true);
-            
+            setMessage(\`Successfully withdrew ৳\${amount.toLocaleString()}!\`);
+            setIsError(false);
             setWithdrawAmount("");
-            setWithdrawAccount("");
             await fetchWalletData();
+            setActiveTab("overview");
         } catch (err) {
             setMessage(err.message);
             setIsError(true);
@@ -183,12 +179,9 @@ function Wallet() {
             setNewMethodName("");
             setNewMethodAccount("");
             setNewMethodSecret("");
-            setMessage("Payment method saved successfully.");
-            setIsError(false);
             await fetchWalletData();
         } catch (err) {
-            setMessage(err.message);
-            setIsError(true);
+            alert(err.message);
         } finally {
             setActionLoading(false);
         }
@@ -197,13 +190,10 @@ function Wallet() {
     const handleDeleteMethod = async (methodId) => {
         if (!window.confirm("Delete this saved payment method?")) return;
         try {
-            await authFetch(`/api/payments/methods/${methodId}`, { method: "DELETE" });
+            await authFetch(\`/api/payments/methods/\${methodId}\`, { method: "DELETE" });
             await fetchWalletData();
             if (selectedMethodId === String(methodId)) {
                 setSelectedMethodId("new");
-            }
-            if (withdrawSelectedMethodId === String(methodId)) {
-                setWithdrawSelectedMethodId("new");
             }
         } catch (err) {
             alert("Failed to delete method");
@@ -211,12 +201,12 @@ function Wallet() {
     };
 
     if (loading) {
-        return <div className="wallet-loading">Loading Wallet Data...</div>;
+        return <div className="loading-spinner">Loading Wallet...</div>;
     }
 
     if (!user) {
         return (
-            <div className="page-wrapper" style={{ textAlign: "center" }}>
+            <div className="container" style={{ textAlign: "center", marginTop: "50px" }}>
                 <h2>Authentication Required</h2>
                 <p>Please <Link to="/login">login</Link> to view your wallet.</p>
             </div>
@@ -226,60 +216,65 @@ function Wallet() {
     const currentBalance = Number(wallet?.balance || 0);
 
     return (
-        <div className="page-wrapper wallet-page">
-            <div className="wallet-hero">
-                <div className="wallet-hero-content">
-                    <h1>Digital Wallet</h1>
-                    <div className="wallet-balance-display">
-                        <span className="balance-label">Available Balance</span>
-                        <span className="balance-amount">৳{currentBalance.toLocaleString()}</span>
-                    </div>
+        <div className="container">
+            <div className="wallet-header">
+                <h2>Digital Wallet</h2>
+                <div className="wallet-balance-box">
+                    <span className="balance-label">Current Balance</span>
+                    <span className="balance-amount">৳{currentBalance.toLocaleString()}</span>
                 </div>
             </div>
 
-            <div className="wallet-container">
-                {/* Top Tabs */}
-                <div className="wallet-tabs">
+            <div className="wallet-dashboard">
+                {/* Left Sidebar Menu */}
+                <div className="wallet-sidebar">
                     <button 
-                        className={`wallet-tab-btn ${activeTab === "overview" ? "active" : ""}`}
+                        className={\`sidebar-btn \${activeTab === "overview" ? "active" : ""}\`}
                         onClick={() => { setActiveTab("overview"); setMessage(""); }}
                     >
                         📊 Overview
                     </button>
                     <button 
-                        className={`wallet-tab-btn ${activeTab === "deposit" ? "active" : ""}`}
+                        className={\`sidebar-btn \${activeTab === "deposit" ? "active" : ""}\`}
                         onClick={() => { setActiveTab("deposit"); setMessage(""); }}
                     >
                         📥 Deposit Funds
                     </button>
                     <button 
-                        className={`wallet-tab-btn ${activeTab === "withdraw" ? "active" : ""}`}
+                        className={\`sidebar-btn \${activeTab === "withdraw" ? "active" : ""}\`}
                         onClick={() => { setActiveTab("withdraw"); setMessage(""); }}
                     >
                         📤 Withdraw Funds
                     </button>
                     <button 
-                        className={`wallet-tab-btn ${activeTab === "methods" ? "active" : ""}`}
+                        className={\`sidebar-btn \${activeTab === "methods" ? "active" : ""}\`}
                         onClick={() => { setActiveTab("methods"); setMessage(""); }}
                     >
-                        💳 Saved Methods
+                        💳 Payment Methods
                     </button>
                 </div>
 
-                {/* Content Area */}
-                <div className="wallet-content-area">
+                {/* Right Content Area */}
+                <div className="wallet-content">
 
                     {/* Deposit Modal Popup */}
                     {showSuccessModal && (
-                        <div className="wallet-modal-overlay">
-                            <div className="wallet-modal-content">
-                                <div className="modal-icon">🎉</div>
-                                <h2>Success!</h2>
-                                <p>{successMsg}</p>
+                        <div style={{
+                            position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
+                            backgroundColor: "rgba(0,0,0,0.6)", zIndex: 9999,
+                            display: "flex", alignItems: "center", justifyContent: "center"
+                        }}>
+                            <div style={{
+                                background: "#fff", padding: "30px", borderRadius: "12px",
+                                maxWidth: "400px", textAlign: "center", boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
+                            }}>
+                                <div style={{ fontSize: "50px", marginBottom: "15px" }}>🎉</div>
+                                <h2 style={{ color: "#27ae60", marginBottom: "10px" }}>Success!</h2>
+                                <p style={{ fontSize: "16px", marginBottom: "25px", color: "#333" }}>{successMsg}</p>
                                 <button 
                                     className="btn btn-primary"
                                     onClick={() => setShowSuccessModal(false)}
-                                    style={{ width: "100%", marginTop: "15px" }}
+                                    style={{ width: "100%" }}
                                 >
                                     Close & Return to Wallet
                                 </button>
@@ -289,82 +284,28 @@ function Wallet() {
 
                     {/* Tab: Overview */}
                     {activeTab === "overview" && (
-                        <div className="wallet-card fade-in">
-                            <h3 className="wallet-card-title">Welcome to your Wallet</h3>
-                            <p className="wallet-card-desc">Select an action from the menu above to manage your funds.</p>
-                            
-                            <div className="wallet-history-section">
-                                <div className="history-header">
-                                    <h3>📜 Transaction Logs</h3>
-                                    <span className="history-badge">
-                                        {wallet?.transactions?.length || 0} records
-                                    </span>
-                                </div>
-
-                                {wallet?.transactions && wallet.transactions.length > 0 ? (
-                                    <div className="table-responsive">
-                                        <table className="styled-table">
-                                            <thead>
-                                                <tr>
-                                                    <th>Activity Type</th>
-                                                    <th>Amount</th>
-                                                    <th>Date & Time</th>
-                                                    <th>Trx ID</th>
-                                                    
-                                                </tr>
-                                            </thead>
-                                            <tbody>
-                                                {wallet.transactions.map((tx) => {
-                                                    const isCredit = tx.type === "deposit" || tx.type === "sale_proceeds" || tx.type === "bid_refund";
-                                                    return (
-                                                        <tr key={tx.wallet_txn_id}>
-                                                            <td>
-                                                                <span className={`type-badge ${tx.type}`}>
-                                                                    {tx.type === "deposit" && "📥 Deposit"}
-                                                                    {tx.type === "withdrawal" && "📤 Withdrawal"}
-                                                                    {tx.type === "payment" && "🛍️ Item Purchase"}
-                                                                    {tx.type === "sale_proceeds" && "💰 Auction Earnings"}
-                                                                    {tx.type === "bid_escrow" && "🔒 Escrow Hold"}
-                                                                    {tx.type === "bid_refund" && "🔓 Escrow Refund"}
-                                                                </span>
-                                                            </td>
-                                                            <td className={`amt-cell ${isCredit ? "credit" : "debit"}`}>
-                                                                {isCredit ? "+" : "-"}৳{Number(tx.amount).toLocaleString()}
-                                                            </td>
-                                                            <td>{formatDateTime(tx.transaction_time)}</td>
-                                                            <td className="id-cell">{tx.trx_id}</td>
-                                                            
-                                                        </tr>
-                                                    );
-                                                })}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                ) : (
-                                    <div className="empty-state">
-                                        No wallet transactions yet. Funds deposited or earnings from auctions will appear here.
-                                    </div>
-                                )}
-                            </div>
+                        <div className="wallet-card-action" style={{ border: "none", boxShadow: "none" }}>
+                            <h3>Welcome to your Wallet</h3>
+                            <p style={{ color: "var(--muted)" }}>Select an action from the menu to manage your funds.</p>
                         </div>
                     )}
 
                     {/* Tab: Deposit */}
                     {activeTab === "deposit" && (
-                        <div className="wallet-card fade-in">
-                            <h3 className="wallet-card-title">Deposit Funds</h3>
-                            <p className="wallet-card-desc">Add money securely to your AntiqueX wallet.</p>
+                        <div className="wallet-card-action">
+                            <h3>Deposit Funds</h3>
+                            <p className="action-hint">Top up your wallet balance instantly.</p>
 
-                            <form onSubmit={handleDeposit} className="wallet-form-container">
+                            <form onSubmit={handleDeposit} className="wallet-form">
                                 
                                 <div className="form-group">
-                                    <label>Payment Method</label>
+                                    <label>Select Payment Method</label>
                                     <select 
                                         value={selectedMethodId} 
                                         onChange={(e) => setSelectedMethodId(e.target.value)}
-                                        className="wallet-select"
+                                        style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
                                     >
-                                        <option value="new">Select Payment Method</option>
+                                        <option value="new">➕ Add New Temporary Method</option>
                                         {paymentMethods.map(m => (
                                             <option key={m.method_id} value={m.method_id}>
                                                 {m.method_name} ({m.provider === 'card' ? 'Card' : m.provider.charAt(0).toUpperCase() + m.provider.slice(1)})
@@ -375,14 +316,14 @@ function Wallet() {
 
                                 {/* Show full form only if "new" is selected */}
                                 {selectedMethodId === "new" && (
-                                    <div className="wallet-nested-form">
+                                    <div style={{ background: "#f8f9fa", padding: "15px", borderRadius: "8px", marginBottom: "15px", border: "1px solid #eee" }}>
                                         <div className="form-group">
                                             <label htmlFor="depositMethod">Gateway Provider</label>
                                             <select
                                                 id="depositMethod"
                                                 value={depositMethod}
                                                 onChange={(e) => setDepositMethod(e.target.value)}
-                                                className="wallet-select"
+                                                className="gateway-select"
                                             >
                                                 <option value="bkash">Bkash</option>
                                                 <option value="nagad">Nagad</option>
@@ -394,7 +335,6 @@ function Wallet() {
                                             <input
                                                 id="accountNumber"
                                                 type="text"
-                                                className="wallet-input"
                                                 placeholder={depositMethod === "card" ? "e.g. 4111222233334444" : "e.g. 017XXXXXX"}
                                                 value={accountNumber}
                                                 onChange={(e) => setAccountNumber(e.target.value)}
@@ -406,7 +346,6 @@ function Wallet() {
                                             <input
                                                 id="gatewayPin"
                                                 type="password"
-                                                className="wallet-input"
                                                 placeholder="***"
                                                 value={gatewayPin}
                                                 onChange={(e) => setGatewayPin(e.target.value)}
@@ -416,14 +355,13 @@ function Wallet() {
                                     </div>
                                 )}
 
-                                <div className="form-group amount-group">
-                                    <label htmlFor="depositAmount">Deposit Amount (BDT)</label>
+                                <div className="form-group">
+                                    <label htmlFor="depositAmount">Amount (BDT)</label>
                                     <input
                                         id="depositAmount"
                                         type="number"
-                                        className="wallet-input amount-input"
-                                        min="1"
-                                        step="any"
+                                        min="100"
+                                        step="100"
                                         placeholder="Enter amount to deposit"
                                         value={depositAmount}
                                         onChange={(e) => setDepositAmount(e.target.value)}
@@ -431,92 +369,44 @@ function Wallet() {
                                     />
                                 </div>
 
-                                <button type="submit" className="btn btn-primary wallet-submit-btn" disabled={actionLoading}>
-                                    {actionLoading ? "Processing…" : `Confirm Deposit ৳${Number(depositAmount || 0).toLocaleString()}`}
+                                <button type="submit" className="btn btn-primary" disabled={actionLoading}>
+                                    {actionLoading ? "Processing…" : \`Deposit ৳\${Number(depositAmount || 0).toLocaleString()}\`}
                                 </button>
                             </form>
                             
                             {message && (
-                                <div className={`wallet-alert ${isError ? "alert-error" : "alert-success"}`}>
+                                <p className={\`msg \${isError ? "msg-error" : "msg-success"}\`} style={{ marginTop: "15px" }}>
                                     {message}
-                                </div>
+                                </p>
                             )}
                         </div>
                     )}
 
                     {/* Tab: Withdraw */}
                     {activeTab === "withdraw" && (
-                        <div className="wallet-card fade-in">
-                            <h3 className="wallet-card-title">Withdraw Funds</h3>
-                            <p className="wallet-card-desc">Transfer funds from your wallet to your personal accounts.</p>
+                        <div className="wallet-card-action">
+                            <h3>Withdraw Funds</h3>
+                            <p className="action-hint">Transfer funds from your wallet back to your bank or mobile wallet.</p>
 
-                            <form onSubmit={handleWithdraw} className="wallet-form-container">
-                                
+                            <form onSubmit={handleWithdraw} className="wallet-form">
                                 <div className="form-group">
-                                    <label>Destination Account</label>
-                                    <select 
-                                        value={withdrawSelectedMethodId} 
-                                        onChange={(e) => setWithdrawSelectedMethodId(e.target.value)}
-                                        className="wallet-select"
-                                    >
-                                        <option value="new">Select Destination Account</option>
-                                        {paymentMethods.map(m => (
-                                            <option key={m.method_id} value={m.method_id}>
-                                                {m.method_name} ({m.provider === 'card' ? 'Card' : m.provider.charAt(0).toUpperCase() + m.provider.slice(1)})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                {/* Show full form only if "new" is selected */}
-                                {withdrawSelectedMethodId === "new" && (
-                                    <div className="wallet-nested-form">
-                                        <div className="form-group">
-                                            <label htmlFor="withdrawMethod">Transfer Destination</label>
-                                            <select
-                                                id="withdrawMethod"
-                                                value={withdrawMethod}
-                                                onChange={(e) => setWithdrawMethod(e.target.value)}
-                                                className="wallet-select"
-                                            >
-                                                <option value="bkash">Bkash</option>
-                                                <option value="nagad">Nagad</option>
-                                                <option value="card">Bank / Card Account</option>
-                                            </select>
-                                        </div>
-                                        <div className="form-group">
-                                            <label htmlFor="withdrawAccount">{withdrawMethod === "card" ? "Account / Card Number" : "Mobile Number"}</label>
-                                            <input
-                                                id="withdrawAccount"
-                                                type="text"
-                                                className="wallet-input"
-                                                placeholder={withdrawMethod === "card" ? "e.g. 4111222233334444" : "e.g. 017XXXXXX"}
-                                                value={withdrawAccount}
-                                                onChange={(e) => setWithdrawAccount(e.target.value)}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-
-                                <div className="form-group amount-group">
-                                    <label htmlFor="withdrawAmount">Withdrawal Amount (BDT)</label>
-                                    <div className="amount-input-wrapper">
+                                    <label htmlFor="withdrawAmount">Amount (BDT)</label>
+                                    <div style={{ display: "flex", gap: "10px" }}>
                                         <input
                                             id="withdrawAmount"
                                             type="number"
-                                            className="wallet-input amount-input"
-                                            min="1"
+                                            min="100"
                                             max={currentBalance}
-                                            step="any"
+                                            step="100"
                                             placeholder="Enter amount to withdraw"
                                             value={withdrawAmount}
                                             onChange={(e) => setWithdrawAmount(e.target.value)}
                                             required
+                                            style={{ flex: 1 }}
                                         />
                                         <button
                                             type="button"
-                                            className="btn btn-outline max-btn"
+                                            className="btn btn-outline"
                                             onClick={() => setWithdrawAmount(String(currentBalance))}
                                         >
                                             Max All
@@ -526,73 +416,63 @@ function Wallet() {
 
                                 <button
                                     type="submit"
-                                    className="btn btn-primary wallet-submit-btn"
+                                    className="btn btn-primary"
                                     disabled={actionLoading || currentBalance <= 0}
                                 >
-                                    {actionLoading ? "Processing…" : `Confirm Withdrawal ৳${Number(withdrawAmount || 0).toLocaleString()}`}
+                                    {actionLoading ? "Processing…" : \`Confirm Withdrawal of ৳\${Number(withdrawAmount || 0).toLocaleString()}\`}
                                 </button>
                             </form>
-                            
                             {message && (
-                                <div className={`wallet-alert ${isError ? "alert-error" : "alert-success"}`}>
+                                <p className={\`msg \${isError ? "msg-error" : "msg-success"}\`} style={{ marginTop: "15px" }}>
                                     {message}
-                                </div>
+                                </p>
                             )}
                         </div>
                     )}
 
                     {/* Tab: Payment Methods */}
                     {activeTab === "methods" && (
-                        <div className="wallet-card fade-in">
-                            <h3 className="wallet-card-title">Saved Payment Methods</h3>
-                            <p className="wallet-card-desc">
-                                Manage your connected accounts for fast deposits and withdrawals.
+                        <div className="wallet-card-action">
+                            <h3>Saved Payment Methods</h3>
+                            <p className="action-hint">
+                                Add payment methods here to quickly deposit funds without re-entering details.
                             </p>
 
-                            {message && (
-                                <div className={`wallet-alert ${isError ? "alert-error" : "alert-success"}`} style={{ marginBottom: "20px" }}>
-                                    {message}
-                                </div>
-                            )}
-
                             {paymentMethods.length > 0 ? (
-                                <div className="saved-methods-grid">
+                                <div className="methods-grid" style={{ marginBottom: "25px" }}>
                                     {paymentMethods.map((m) => (
-                                        <div key={m.method_id} className="saved-method-box">
-                                            <div className="method-details">
-                                                <span className="method-icon">💳</span>
-                                                <div className="method-text">
-                                                    <strong>{m.method_name}</strong>
-                                                    <span className="method-sub">
-                                                        {m.provider.toUpperCase()} • ending in {m.account_number ? m.account_number.slice(-4) : "****"}
-                                                    </span>
-                                                </div>
+                                        <div key={m.method_id} className="method-card" style={{ display: "flex", justifyContent: "space-between", padding: "12px", border: "1px solid #ccc", borderRadius: "6px", marginBottom: "10px" }}>
+                                            <div className="method-info">
+                                                <span className="method-icon" style={{ marginRight: "10px" }}>💳</span>
+                                                <strong>{m.method_name}</strong> 
+                                                <span style={{ color: "#7f8c8d", fontSize: "12px", marginLeft: "10px" }}>
+                                                    ({m.provider}) ending in {m.account_number ? m.account_number.slice(-4) : "****"}
+                                                </span>
                                             </div>
                                             <button
                                                 type="button"
-                                                className="remove-method-btn"
                                                 onClick={() => handleDeleteMethod(m.method_id)}
                                                 title="Delete payment method"
+                                                style={{ background: "none", border: "none", color: "#e74c3c", cursor: "pointer", fontWeight: "bold" }}
                                             >
-                                                Remove
+                                                ✕ Remove
                                             </button>
                                         </div>
                                     ))}
                                 </div>
                             ) : (
-                                <div className="empty-state">
+                                <p style={{ color: "var(--muted)", fontSize: "14px", margin: "10px 0 25px 0" }}>
                                     No saved payment methods yet. Add one below!
-                                </div>
+                                </p>
                             )}
 
-                            <div className="wallet-nested-form" style={{ marginTop: "30px" }}>
-                                <h4 style={{ margin: "0 0 15px 0", color: "var(--text)" }}>Add New Method</h4>
-                                <form onSubmit={handleAddMethod} className="wallet-form-container">
+                            <div style={{ background: "#f8f9fa", padding: "15px", borderRadius: "8px", border: "1px solid #eee" }}>
+                                <h4 style={{ margin: "0 0 15px 0" }}>Add New Method</h4>
+                                <form onSubmit={handleAddMethod} className="wallet-form">
                                     <div className="form-group">
                                         <label>Custom Label Name</label>
                                         <input
                                             type="text"
-                                            className="wallet-input"
                                             placeholder="e.g. My Personal Bkash"
                                             value={newMethodName}
                                             onChange={(e) => setNewMethodName(e.target.value)}
@@ -604,7 +484,7 @@ function Wallet() {
                                         <select
                                             value={newMethodProvider}
                                             onChange={(e) => setNewMethodProvider(e.target.value)}
-                                            className="wallet-select"
+                                            style={{ width: "100%", padding: "10px", borderRadius: "6px", border: "1px solid #ccc" }}
                                         >
                                             <option value="bkash">Bkash</option>
                                             <option value="nagad">Nagad</option>
@@ -615,7 +495,6 @@ function Wallet() {
                                         <label>{newMethodProvider === "card" ? "Card Number" : "Mobile Number"}</label>
                                         <input
                                             type="text"
-                                            className="wallet-input"
                                             placeholder={newMethodProvider === "card" ? "e.g. 4111222233334444" : "e.g. 017XXXXXX"}
                                             value={newMethodAccount}
                                             onChange={(e) => setNewMethodAccount(e.target.value)}
@@ -626,14 +505,13 @@ function Wallet() {
                                         <label>{newMethodProvider === "card" ? "CVV" : "PIN"}</label>
                                         <input
                                             type="password"
-                                            className="wallet-input"
                                             placeholder="***"
                                             value={newMethodSecret}
                                             onChange={(e) => setNewMethodSecret(e.target.value)}
                                             required
                                         />
                                     </div>
-                                    <button type="submit" className="btn btn-primary wallet-submit-btn" disabled={actionLoading}>
+                                    <button type="submit" className="btn btn-primary" disabled={actionLoading}>
                                         {actionLoading ? "Saving..." : "+ Save Method"}
                                     </button>
                                 </form>
@@ -641,6 +519,65 @@ function Wallet() {
                         </div>
                     )}
 
+                    {/* Wallet Transactions History */}
+                    {/* Reusing existing logic... */}
+                    <div className="wallet-history-card">
+                        <div className="history-header">
+                            <h3>📜 Wallet Activity & Transaction Logs</h3>
+                            <span className="badge badge-outline">
+                                {wallet?.transactions?.length || 0} activity records
+                            </span>
+                        </div>
+
+                        {wallet?.transactions && wallet.transactions.length > 0 ? (
+                            <div className="history-table-wrapper">
+                                <table className="history-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Activity Type</th>
+                                            <th>Amount</th>
+                                            <th>Date & Time</th>
+                                            <th>Log ID</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {wallet.transactions.map((tx) => {
+                                            const isCredit = tx.type === "deposit" || tx.type === "sale_proceeds" || tx.type === "bid_refund";
+                                            return (
+                                                <tr key={tx.wallet_txn_id}>
+                                                    <td>
+                                                        <div className="txn-type-cell">
+                                                            <span className={\`txn-badge txn-\${tx.type}\`}>
+                                                                {tx.type === "deposit" && "📥 Deposit"}
+                                                                {tx.type === "withdrawal" && "📤 Withdrawal"}
+                                                                {tx.type === "payment" && "🛍️ Item Purchase"}
+                                                                {tx.type === "sale_proceeds" && "💰 Auction Earnings"}
+                                                                {tx.type === "bid_escrow" && "🔒 Escrow Hold"}
+                                                                {tx.type === "bid_refund" && "🔓 Escrow Refund"}
+                                                            </span>
+                                                        </div>
+                                                    </td>
+                                                    <td className={\`txn-amount-cell \${isCredit ? "amount-credit" : "amount-debit"}\`}>
+                                                        {isCredit ? "+" : "-"}৳{Number(tx.amount).toLocaleString()}
+                                                    </td>
+                                                    <td className="txn-time-cell">
+                                                        {formatDateTime(tx.transaction_time)}
+                                                    </td>
+                                                    <td className="txn-id-cell">
+                                                        #{tx.wallet_txn_id}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="empty-history-box">
+                                No wallet transactions yet. Funds deposited or earnings from auctions will appear here.
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
@@ -648,3 +585,6 @@ function Wallet() {
 }
 
 export default Wallet;
+`;
+
+fs.writeFileSync('frontend/src/pages/Wallet.jsx', content);

@@ -5,7 +5,7 @@ const pool = require("../config/db");
  */
 const getPaymentMethodsByUser = async (userId) => {
     const query = `
-        SELECT method_id, user_id, method_name
+        SELECT method_id, user_id, method_name, provider, account_number
         FROM payment_methods
         WHERE user_id = $1
         ORDER BY method_id DESC
@@ -17,13 +17,13 @@ const getPaymentMethodsByUser = async (userId) => {
 /**
  * Add a payment method for a user
  */
-const addPaymentMethod = async (userId, methodName) => {
+const addPaymentMethod = async (userId, methodName, provider, accountNumber, secretCode) => {
     const query = `
-        INSERT INTO payment_methods (user_id, method_name)
-        VALUES ($1, $2)
+        INSERT INTO payment_methods (user_id, method_name, provider, account_number, secret_code)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING *
     `;
-    const result = await pool.query(query, [userId, methodName]);
+    const result = await pool.query(query, [userId, methodName, provider, accountNumber, secretCode]);
     return result.rows[0];
 };
 
