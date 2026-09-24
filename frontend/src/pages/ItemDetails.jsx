@@ -47,7 +47,7 @@ function ItemDetails() {
             setAuction(data);
 
             fetch(
-                `/items/${data.item_id}/images`
+                `/api/items/${data.item_id}/images`
             )
                 .then((res) => (res.ok ? res.json() : []))
                 .then((imgData) => setImages(imgData))

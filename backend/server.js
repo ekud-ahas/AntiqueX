@@ -30,7 +30,7 @@ app.get("/", (req, res) => {
 });
 
 // Item APIs
-app.use("/items", itemRoutes);
+app.use("/api/items", itemRoutes);
 
 // Authentication APIs
 app.use("/api/auth", authRoutes);

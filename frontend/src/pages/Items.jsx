@@ -31,7 +31,7 @@ function Items() {
     const [sortBy, setSortBy] = useState("ending_soon");
 
     useEffect(() => {
-        fetch("/items")
+        fetch("/api/items")
             .then((res) => {
                 if (!res.ok) {
                     throw new Error("Failed to load items");

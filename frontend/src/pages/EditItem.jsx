@@ -53,7 +53,7 @@ function EditItem() {
   const loadItem = async () => {
     try {
       const [itemRes, categoriesRes] = await Promise.all([
-        fetch(`/items/${id}`),
+        fetch(`/api/items/${id}`),
         fetch("/api/categories"),
       ]);
 
@@ -138,7 +138,7 @@ function EditItem() {
         payload.auction_duration = Number(form.auction_duration);
       }
 
-      const response = await authFetch(`/items/${id}`, {
+      const response = await authFetch(`/api/items/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -164,7 +164,7 @@ function EditItem() {
   const handleDeleteImage = async (img_id) => {
     try {
       const response = await authFetch(
-        `/items/${id}/images/${img_id}`,
+        `/api/items/${id}/images/${img_id}`,
         {
           method: "DELETE",
         }
@@ -187,7 +187,7 @@ function EditItem() {
 
     try {
       const response = await authFetch(
-        `/items/${id}/images`,
+        `/api/items/${id}/images`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

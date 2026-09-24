@@ -86,7 +86,7 @@ function SellItem() {
             }
 
             const response = await authFetch(
-                "/items",
+                "/api/items",
                 {
                     method: "POST",
                     body: formData

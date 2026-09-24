@@ -14,7 +14,7 @@ function MyItems() {
   const fetchMyItems = () => {
     setLoading(true);
 
-    fetch("/items")
+    fetch("/api/items")
       .then((response) => {
         if (!response.ok) throw new Error("Failed to fetch items");
         return response.json();
@@ -49,7 +49,7 @@ function MyItems() {
 
     try {
       const response = await authFetch(
-        `/items/${item_id}`,
+        `/api/items/${item_id}`,
         {
           method: "DELETE",
         }
