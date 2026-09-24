@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 import "../App.css";
 import "./Auth.css";
 
 function Register() {
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
   const [form, setForm] = useState({
     username: "",
@@ -49,12 +51,7 @@ function Register() {
         return;
       }
 
-      if (data.token) {
-        localStorage.setItem("token", data.token);
-      }
-      if (data.user) {
-        localStorage.setItem("user", JSON.stringify(data.user));
-      }
+      login(data.user, data.token);
       setIsError(false);
       setMessage("Registration successful! Redirecting…");
 

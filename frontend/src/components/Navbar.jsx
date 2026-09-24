@@ -1,24 +1,18 @@
-import { NavLink, Link } from "react-router-dom";
+import { useContext } from "react";
+import { NavLink, Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 import "./Navbar.css";
 
 function Navbar() {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const { user, logout } = useContext(AuthContext);
+    const navigate = useNavigate();
+
     const isAdmin = user && (user.role === "admin" || user.role === "moderator");
     const isFullAdmin = user && user.role === "admin"; // full admin only
 
     const handleLogout = async () => {
-        try {
-            const token = localStorage.getItem("token");
-            await fetch("/api/auth/logout", {
-                method: "POST",
-                headers: token ? { "Authorization": `Bearer ${token}` } : {}
-            });
-        } catch {
-            // Ignore network failure on logout
-        }
-        localStorage.removeItem("user");
-        localStorage.removeItem("token");
-        window.location.href = "/";
+        await logout();
+        navigate("/");
     };
 
     return (

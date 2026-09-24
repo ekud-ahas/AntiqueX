@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../context/AuthContext";
 import "../App.css";
 import "./Auth.css";
 
 function Login() {
     const navigate = useNavigate();
+    const { login } = useContext(AuthContext);
 
     const [form, setForm] = useState({ email: "", password: "" });
     const [message, setMessage] = useState("");
@@ -35,10 +37,7 @@ function Login() {
                 return;
             }
 
-            if (data.token) {
-                localStorage.setItem("token", data.token);
-            }
-            localStorage.setItem("user", JSON.stringify(data.user));
+            login(data.user, data.token);
             setIsError(false);
             setMessage("Login successful! Redirecting…");
 

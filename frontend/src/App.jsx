@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./context/AuthContext";
 
 import Navbar from "./components/Navbar";
 import Home from "./pages/Home";
@@ -17,13 +18,13 @@ import Purchases from "./pages/Purchases";
 import AdminDashboard from "./pages/AdminDashboard";
 import Notifications from "./pages/Notifications";
 
-
 function App() {
   return (
-    <BrowserRouter>
-      <Navbar />
+    <AuthProvider>
+      <BrowserRouter>
+        <Navbar />
 
-      <Routes>
+        <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/items" element={<Items />} />
         <Route path="/items/:id" element={<ItemDetails />} />
@@ -41,6 +42,7 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
     </BrowserRouter>
+    </AuthProvider>
   );
 }
 
