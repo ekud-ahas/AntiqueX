@@ -5,7 +5,7 @@ import "../App.css";
 import "./Watchlist.css";
 
 function Watchlist() {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(sessionStorage.getItem("user"));
 
   const [watchlist, setWatchlist] = useState([]);
   const [loading, setLoading] = useState(true);

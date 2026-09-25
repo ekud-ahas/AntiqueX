@@ -1,11 +1,12 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { authFetch } from "../utils/api";
 import "../App.css";
 import "./MyItems.css";
 
 function MyItems() {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(sessionStorage.getItem("user"));
+  const navigate = useNavigate();
 
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -107,7 +108,7 @@ function MyItems() {
       ) : (
         <div className="my-items-grid">
           {items.map((item) => (
-            <div className="my-item-card" key={item.item_id}>
+            <div className="my-item-card" key={item.item_id} onClick={() => navigate(`/items/${item.item_id}`)} style={{ cursor: "pointer" }}>
               <div className="my-item-img-container">
                 {item.thumbnail_url ? (
                   <img
@@ -147,13 +148,13 @@ function MyItems() {
                 </div>
 
                 <div className="my-item-actions">
-                  <Link to={`/my-items/${item.item_id}/edit`} className="btn btn-outline">
+                  <Link to={`/my-items/${item.item_id}/edit`} className="btn btn-outline" onClick={(e) => e.stopPropagation()}>
                     Edit Details
                   </Link>
                   <button
                     type="button"
                     className="btn btn-danger"
-                    onClick={() => handleDelete(item.item_id)}
+                    onClick={(e) => { e.stopPropagation(); handleDelete(item.item_id); }}
                   >
                     Delete
                   </button>

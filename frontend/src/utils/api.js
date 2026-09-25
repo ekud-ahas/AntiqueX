@@ -3,16 +3,16 @@
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
 
 /**
- * Retrieve current JWT token from localStorage
+ * Retrieve current JWT token from sessionStorage
  */
-export const getToken = () => localStorage.getItem("token");
+export const getToken = () => sessionStorage.getItem("token");
 
 /**
- * Retrieve current user object from localStorage
+ * Retrieve current user object from sessionStorage
  */
 export const getCurrentUser = () => {
     try {
-        const raw = localStorage.getItem("user");
+        const raw = sessionStorage.getItem("user");
         return raw ? JSON.parse(raw) : null;
     } catch {
         return null;

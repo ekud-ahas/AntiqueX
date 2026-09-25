@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+const fs = require('fs');
+
+const content = `import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { authFetch } from "../utils/api";
 import "../App.css";
@@ -11,7 +13,7 @@ function formatDateTime(dateString) {
 }
 
 function Purchases() {
-    const user = JSON.parse(sessionStorage.getItem("user"));
+    const user = JSON.parse(localStorage.getItem("user"));
     const [transactions, setTransactions] = useState([]);
     const [walletBalance, setWalletBalance] = useState(0);
     const [paymentMethods, setPaymentMethods] = useState([]);
@@ -41,8 +43,8 @@ function Purchases() {
         try {
             const [txnRes, wRes, mRes] = await Promise.all([
                 authFetch("/api/transactions"),
-                authFetch(`/api/wallet/${user.user_id}`),
-                authFetch(`/api/payments/methods/${user.user_id}`)
+                authFetch(\`/api/wallet/\${user.user_id}\`),
+                authFetch(\`/api/payments/methods/\${user.user_id}\`)
             ]);
             if (txnRes.ok) setTransactions(await txnRes.json());
             if (wRes.ok) {
@@ -121,7 +123,7 @@ function Purchases() {
     const handleShipItem = async (e, shipmentId) => {
         e.preventDefault();
         try {
-            const res = await authFetch(`/api/shipments/${shipmentId}/ship`, {
+            const res = await authFetch(\`/api/shipments/\${shipmentId}/ship\`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ carrier, trackingNumber })
@@ -141,7 +143,7 @@ function Purchases() {
     const handleMarkDelivered = async (shipmentId) => {
         if (!window.confirm("Are you sure you received this item? Escrow funds will be released to the seller.")) return;
         try {
-            const res = await authFetch(`/api/shipments/${shipmentId}/deliver`, { method: "POST" });
+            const res = await authFetch(\`/api/shipments/\${shipmentId}/deliver\`, { method: "POST" });
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             await fetchData();
@@ -153,7 +155,7 @@ function Purchases() {
     const handleOpenDispute = async (e) => {
         e.preventDefault();
         try {
-            const res = await authFetch(`/api/shipments/${disputeShipmentId}/dispute`, {
+            const res = await authFetch(\`/api/shipments/\${disputeShipmentId}/dispute\`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ reason: disputeReason })
@@ -168,15 +170,6 @@ function Purchases() {
             alert(err.message);
         }
     };
-
-    if (!user) {
-        return (
-            <div className="page-wrapper" style={{ textAlign: "center", padding: "50px" }}>
-                <h2>Authentication Required</h2>
-                <p>Please <Link to="/login">login</Link> to view your orders.</p>
-            </div>
-        );
-    }
 
     if (loading) {
         return <div className="loading-spinner">Loading Orders...</div>;
@@ -200,20 +193,22 @@ function Purchases() {
 
             <div className="wallet-container">
                 <div className="wallet-tabs">
-                    
+                    {(user.role === "Customer" || user.role === "Admin") && (
                         <button 
-                            className={`wallet-tab-btn ${activeTab === "buyer" ? "active" : ""}`}
+                            className={\`wallet-tab-btn \${activeTab === "buyer" ? "active" : ""}\`}
                             onClick={() => setActiveTab("buyer")}
                         >
                             📦 My Purchases
                         </button>
-                    
+                    )}
+                    {(user.role === "Seller" || user.role === "Admin") && (
                         <button 
-                            className={`wallet-tab-btn ${activeTab === "seller" ? "active" : ""}`}
+                            className={\`wallet-tab-btn \${activeTab === "seller" ? "active" : ""}\`}
                             onClick={() => setActiveTab("seller")}
                         >
                             🚚 My Sales
                         </button>
+                    )}
                 </div>
 
                 <div className="wallet-content-area">
@@ -222,7 +217,7 @@ function Purchases() {
                             <div style={{ fontSize: "40px", marginBottom: "15px" }}>🏺</div>
                             <h3>No {activeTab === "buyer" ? "purchases" : "sales"} found</h3>
                             <p style={{ color: "var(--muted)" }}>When you win or sell an item, it will appear here.</p>
-                            <Link to="/items" className="btn btn-primary" style={{ marginTop: "12px", display: "inline-block", color: "#fff" }}>
+                            <Link to="/items" className="btn btn-primary" style={{ marginTop: "12px", display: "inline-block" }}>
                                 Browse Active Auctions
                             </Link>
                         </div>
@@ -237,7 +232,7 @@ function Purchases() {
                                             <div style={{ display: "flex", alignItems: "center", gap: "15px" }}>
                                                 {txn.thumbnail_url ? (
                                                     <img 
-                                                        src={txn.thumbnail_url.startsWith("/uploads") ? txn.thumbnail_url : `${txn.thumbnail_url}`} 
+                                                        src={txn.thumbnail_url.startsWith("/uploads") ? txn.thumbnail_url : \`\${txn.thumbnail_url}\`} 
                                                         alt="thumbnail" 
                                                         style={{ width: "50px", height: "50px", objectFit: "cover", borderRadius: "8px" }}
                                                     />
@@ -246,7 +241,7 @@ function Purchases() {
                                                 )}
                                                 <div>
                                                     <h3 style={{ margin: "0 0 5px 0", fontSize: "18px" }}>{txn.item_title}</h3>
-                                                    <span className={`type-badge ${isUnpaid ? 'withdrawal' : (txn.shipment_status === 'delivered' ? 'deposit' : 'sale_proceeds')}`}>
+                                                    <span className={\`type-badge \${isUnpaid ? 'withdrawal' : (txn.shipment_status === 'delivered' ? 'deposit' : 'sale_proceeds')}\`}>
                                                         {isUnpaid ? "AWAITING PAYMENT" : txn.shipment_status ? txn.shipment_status.toUpperCase() : "PAID"}
                                                     </span>
                                                 </div>
@@ -411,7 +406,7 @@ function Purchases() {
                                     <label>Choose Payment Method *</label>
                                     <div style={{ display: "flex", gap: "10px" }}>
                                         <div
-                                            style={{ flex: 1, padding: "10px", border: `2px solid ${paymentType === 'wallet' ? 'var(--primary)' : '#e2e8f0'}`, borderRadius: "8px", cursor: "pointer" }}
+                                            style={{ flex: 1, padding: "10px", border: \`2px solid \${paymentType === 'wallet' ? 'var(--primary)' : '#e2e8f0'}\`, borderRadius: "8px", cursor: "pointer" }}
                                             onClick={() => setPaymentType("wallet")}
                                         >
                                             <strong>💰 Wallet</strong>
@@ -419,7 +414,7 @@ function Purchases() {
                                         </div>
 
                                         <div
-                                            style={{ flex: 1, padding: "10px", border: `2px solid ${paymentType === 'method' ? 'var(--primary)' : '#e2e8f0'}`, borderRadius: "8px", cursor: "pointer" }}
+                                            style={{ flex: 1, padding: "10px", border: \`2px solid \${paymentType === 'method' ? 'var(--primary)' : '#e2e8f0'}\`, borderRadius: "8px", cursor: "pointer" }}
                                             onClick={() => setPaymentType("method")}
                                         >
                                             <strong>💳 Saved Method</strong>
@@ -473,7 +468,7 @@ function Purchases() {
                                 </div>
 
                                 {payMessage && (
-                                    <div className={`wallet-alert ${isError ? "alert-error" : "alert-success"}`} style={{ padding: "10px", marginBottom: "15px" }}>
+                                    <div className={\`wallet-alert \${isError ? "alert-error" : "alert-success"}\`} style={{ padding: "10px", marginBottom: "15px" }}>
                                         {payMessage}
                                     </div>
                                 )}
@@ -484,7 +479,7 @@ function Purchases() {
                                     style={{ margin: 0 }}
                                     disabled={paying || (paymentType === "wallet" && walletBalance < Number(checkoutTxn.amount))}
                                 >
-                                    {paying ? "Processing Payment…" : `Confirm & Pay ৳${Number(checkoutTxn.amount).toLocaleString()}`}
+                                    {paying ? "Processing Payment…" : \`Confirm & Pay ৳\${Number(checkoutTxn.amount).toLocaleString()}\`}
                                 </button>
                             </form>
                         </div>
@@ -496,3 +491,7 @@ function Purchases() {
 }
 
 export default Purchases;
+`;
+
+fs.writeFileSync('frontend/src/pages/Purchases.jsx', content);
+console.log('rewrote Purchases.jsx');

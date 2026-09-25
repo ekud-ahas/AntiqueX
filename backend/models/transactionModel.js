@@ -96,23 +96,8 @@ const closeAuctionAndRecordWinner = async (auctionId, customClient = null) => {
             // Settle immediately: credit the seller's wallet, mark transaction as completed, and provision shipment!
             const winningAmount = Number(data.bid_amount);
 
-            // Credit seller wallet
-            const sellerWalletRes = await client.query(
-                `INSERT INTO wallets (user_id, balance)
-                 VALUES ($1, $2)
-                 ON CONFLICT (user_id)
-                 DO UPDATE SET balance = wallets.balance + $2
-                 RETURNING wallet_id`,
-                [data.seller_id, winningAmount]
-            );
-            const sellerWalletId = sellerWalletRes.rows[0].wallet_id;
-
-            // Log sale proceeds in seller's wallet ledger
-            await client.query(
-                `INSERT INTO wallet_transactions (wallet_id, txn_id, type, amount)
-                 VALUES ($1, $2, 'sale_proceeds', $3)`,
-                [sellerWalletId, transaction.txn_id, winningAmount]
-            );
+            // Escrow: Funds are held. We no longer credit the seller instantly.
+            // The seller will be credited when the buyer marks the shipment as 'delivered'.
 
             // Mark transaction completed (pre-funded escrow settled)
             await client.query(
@@ -283,7 +268,10 @@ const getUserTransactions = async (userId, role) => {
 
             s.shipment_id,
             s.status AS shipment_status,
-            s.tracking_number
+            s.carrier,
+            s.tracking_number,
+            addr.street,
+            addr.city
 
         FROM transactions t
         JOIN auctions a ON t.auction_id = a.auction_id
@@ -292,6 +280,7 @@ const getUserTransactions = async (userId, role) => {
         LEFT JOIN bids b ON t.winner_bid_id = b.bid_id
         LEFT JOIN users buyer ON b.bidder_id = buyer.user_id
         LEFT JOIN shipments s ON t.txn_id = s.txn_id
+        LEFT JOIN addresses addr ON s.address_id = addr.address_id
     `;
 
     const params = [userId];
@@ -394,28 +383,8 @@ const processPayment = async ({
             [buyerWallet.wallet_id, txn.txn_id, paymentAmount]
         );
 
-        // Credit seller wallet
-        const sellerWalletRes = await client.query(
-            `
-            INSERT INTO wallets (user_id, balance)
-            VALUES ($1, $2)
-            ON CONFLICT (user_id)
-            DO UPDATE SET balance = wallets.balance + $2
-            RETURNING wallet_id, balance
-            `,
-            [txn.seller_id, paymentAmount]
-        );
-
-        const sellerWallet = sellerWalletRes.rows[0];
-
-        // Log seller transaction
-        await client.query(
-            `
-            INSERT INTO wallet_transactions (wallet_id, txn_id, payment_method_id, type, amount)
-            VALUES ($1, $2, $3, 'sale_proceeds', $4)
-            `,
-            [sellerWallet.wallet_id, txn.txn_id, paymentAmount]
-        );
+        // Escrow: Funds are held by the platform.
+        // The seller will be credited automatically upon delivery confirmation.
 
         // 3. Update Transaction status
         const updatedTxn = await client.query(

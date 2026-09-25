@@ -20,7 +20,7 @@ function formatDateTime(dateString) {
 function EditItem() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(sessionStorage.getItem("user"));
 
   const [categories, setCategories] = useState([]);
   const [images, setImages] = useState([]);

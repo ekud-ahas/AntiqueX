@@ -3,7 +3,7 @@ import { authFetch } from "../utils/api";
 import "../App.css";
 
 function WatchlistButton({ itemId }) {
-  const user = JSON.parse(localStorage.getItem("user"));
+  const user = JSON.parse(sessionStorage.getItem("user"));
 
   const [isWatching, setIsWatching] = useState(false);
   const [checking, setChecking] = useState(true);

@@ -20,7 +20,7 @@ function formatDateTime(dateString) {
 
 function ItemDetails() {
     const { id } = useParams();
-    const currentUser = JSON.parse(localStorage.getItem("user"));
+    const currentUser = JSON.parse(sessionStorage.getItem("user"));
 
     const [auction, setAuction] = useState(null);
     const [images, setImages] = useState([]);

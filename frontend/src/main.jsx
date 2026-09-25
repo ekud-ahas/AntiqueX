@@ -10,7 +10,7 @@ window.fetch = async (url, config = {}) => {
   const requestUrl = typeof url === 'string' && url.startsWith('/') && API_BASE_URL
     ? `${API_BASE_URL}${url}`
     : url;
-  const token = localStorage.getItem("token");
+  const token = sessionStorage.getItem("token");
   if (token) {
     config.headers = {
       ...(config.headers || {}),

@@ -18,7 +18,7 @@ function Categories() {
     const [error, setError] = useState("");
 
     // Admin category creation state
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = JSON.parse(sessionStorage.getItem("user"));
     const isAdmin = user && (user.role === "admin" || user.role === "super_admin" || user.role === "moderator");
     const [newCategoryName, setNewCategoryName] = useState("");
     const [newCategoryDesc, setNewCategoryDesc] = useState("");

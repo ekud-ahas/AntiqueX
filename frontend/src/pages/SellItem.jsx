@@ -5,7 +5,7 @@ import "../App.css";
 import "./SellItem.css";
 
 function SellItem() {
-    const user = JSON.parse(localStorage.getItem("user"));
+    const user = JSON.parse(sessionStorage.getItem("user"));
 
     const [categories, setCategories] = useState([]);
     const [form, setForm] = useState({
