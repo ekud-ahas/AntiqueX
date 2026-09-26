@@ -40,7 +40,7 @@ function Purchases() {
     const fetchData = async () => {
         try {
             const [txnRes, wRes, mRes] = await Promise.all([
-                authFetch("/api/transactions"),
+                authFetch(`/api/transactions/user/${user.user_id}`),
                 authFetch(`/api/wallet/${user.user_id}`),
                 authFetch(`/api/payments/methods/${user.user_id}`)
             ]);
