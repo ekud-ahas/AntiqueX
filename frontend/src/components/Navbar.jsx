@@ -1,6 +1,7 @@
 import { useContext, useState, useRef, useEffect } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
+import { authFetch } from "../utils/api";
 import "./Navbar.css";
 
 function Navbar() {
@@ -8,6 +9,7 @@ function Navbar() {
     const navigate = useNavigate();
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const [balance, setBalance] = useState(null);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -18,6 +20,15 @@ function Navbar() {
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (user && user.role !== 'admin' && user.role !== 'moderator') {
+            authFetch("/api/wallet")
+                .then(res => res.ok ? res.json() : { balance: 0 })
+                .then(data => setBalance(data.balance))
+                .catch(() => {});
+        }
+    }, [user]);
 
     const isAdmin = user && (user.role === "admin" || user.role === "moderator");
     const isFullAdmin = user && user.role === "admin"; // full admin only
@@ -69,19 +80,35 @@ function Navbar() {
 
                 <div className="navbar-account">
                     {user ? (
-                        <div className="profile-dropdown-container" ref={dropdownRef}>
+                        <div className="profile-dropdown-container" ref={dropdownRef} style={{ display: "flex", alignItems: "center", gap: "12px", marginRight: "10px" }}>
+                            
                             <button className="profile-avatar-btn" onClick={() => setDropdownOpen(!dropdownOpen)}>
                                 <div className="avatar-circle">
                                     {user.profile_picture_url ? (
                                         <img src={user.profile_picture_url.startsWith('http') ? user.profile_picture_url : `${user.profile_picture_url}`} alt="Avatar" style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover'}} />
                                     ) : (
-                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                                             <circle cx="12" cy="7" r="4"></circle>
                                         </svg>
                                     )}
                                 </div>
                             </button>
+                            
+                            {balance !== null && (
+                                <Link to="/wallet" style={{ 
+                                    textDecoration: "none", 
+                                    background: "#f8fafc", 
+                                    padding: "6px 12px", 
+                                    borderRadius: "20px", 
+                                    fontWeight: "bold", 
+                                    color: "var(--primary)",
+                                    border: "1px solid #e2e8f0",
+                                    fontSize: "14px"
+                                }}>
+                                    ৳ {Number(balance).toLocaleString()}
+                                </Link>
+                            )}
                             
                             {dropdownOpen && (
                                 <div className="profile-dropdown-menu">
