@@ -50,15 +50,15 @@ const getAddresses = async (req, res) => {
 const addAddress = async (req, res) => {
     try {
         const { userId } = req.user;
-        const { street, city } = req.body;
+        const { house, street, city } = req.body;
         
         if (!street || !city) {
             return res.status(400).json({ error: "Street and city are required" });
         }
         
         const result = await pool.query(
-            "INSERT INTO addresses (user_id, street, city) VALUES ($1, $2, $3) RETURNING *",
-            [userId, street, city]
+            "INSERT INTO addresses (user_id, house, street, city) VALUES ($1, $2, $3, $4) RETURNING *",
+            [userId, house, street, city]
         );
         
         res.status(201).json({ message: "Address added successfully", address: result.rows[0] });

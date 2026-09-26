@@ -557,9 +557,15 @@ function ItemDetails() {
                             You need a delivery address on file to place a bid. Where should we ship this item if you win?
                         </p>
                         <form onSubmit={submitAddressAndBid}>
-                            <div className="form-group">
-                                <label>Street Address</label>
-                                <input type="text" value={newAddress.street} onChange={e => setNewAddress({...newAddress, street: e.target.value})} required placeholder="e.g. 12 Lake Road" />
+                            <div className="form-row" style={{ display: "flex", gap: "10px" }}>
+                                <div className="form-group" style={{ flex: 1 }}>
+                                    <label>House/Apt</label>
+                                    <input type="text" value={newAddress.house} onChange={e => setNewAddress({...newAddress, house: e.target.value})} placeholder="e.g. 5A" />
+                                </div>
+                                <div className="form-group" style={{ flex: 2 }}>
+                                    <label>Street Address</label>
+                                    <input type="text" value={newAddress.street} onChange={e => setNewAddress({...newAddress, street: e.target.value})} required placeholder="e.g. 12 Lake Road" />
+                                </div>
                             </div>
                             <div className="form-group">
                                 <label>City</label>

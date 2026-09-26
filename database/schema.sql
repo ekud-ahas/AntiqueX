@@ -31,6 +31,7 @@ CREATE TABLE categories (
 CREATE TABLE addresses (
     address_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    house VARCHAR(100),
     street VARCHAR(150),
     city VARCHAR(100),
     postal_code VARCHAR(20),

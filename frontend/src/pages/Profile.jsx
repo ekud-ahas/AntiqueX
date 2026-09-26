@@ -14,7 +14,7 @@ function Profile() {
     const [uploadingPic, setUploadingPic] = useState(false);
     const [addresses, setAddresses] = useState([]);
     
-    const [newAddress, setNewAddress] = useState({ street: "", city: "" });
+    const [newAddress, setNewAddress] = useState({ house: "", street: "", city: "" });
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [isError, setIsError] = useState(false);
@@ -107,7 +107,7 @@ function Profile() {
             const data = await res.json();
             if (!res.ok) throw new Error(data.error);
             
-            setNewAddress({ street: "", city: "" });
+            setNewAddress({ house: "", street: "", city: "" });
             loadData();
         } catch (err) {
             setMessage(err.message);
@@ -204,7 +204,7 @@ function Profile() {
                         {addresses.map(addr => (
                             <div key={addr.address_id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "15px", border: "1px solid var(--border)", borderRadius: "8px", marginBottom: "10px" }}>
                                 <div>
-                                    <strong>{addr.street}</strong>
+                                    <strong>{addr.house ? `${addr.house}, ` : ""}{addr.street}</strong>
                                     <div style={{ color: "var(--muted)", fontSize: "14px", marginTop: "5px" }}>{addr.city}</div>
                                 </div>
                                 <button onClick={() => handleDeleteAddress(addr.address_id)} className="btn btn-danger" style={{ padding: "6px 12px", fontSize: "12px" }}>Remove</button>
@@ -219,6 +219,10 @@ function Profile() {
                     <h4 style={{ marginBottom: "15px" }}>Add New Address</h4>
                     <form onSubmit={handleAddAddress}>
                         <div className="form-row">
+                            <div className="form-group" style={{ flex: 1 }}>
+                                <label>House/Apt</label>
+                                <input type="text" value={newAddress.house} onChange={e => setNewAddress({...newAddress, house: e.target.value})} placeholder="e.g. 5A" />
+                            </div>
                             <div className="form-group" style={{ flex: 2 }}>
                                 <label>Street Address</label>
                                 <input type="text" value={newAddress.street} onChange={e => setNewAddress({...newAddress, street: e.target.value})} required placeholder="e.g. 15 Banani Road 11" />
