@@ -55,7 +55,7 @@ const createItem = async (req, res) => {
         // Securely resolve seller_id from authenticated token
         const seller_id = req.user.userId;
 
-        if (!seller_id || !category_id || !title || !starting_price) {
+        if (!seller_id || !category_id || !title || starting_price === undefined || starting_price === null || Number(starting_price) < 0 || Number(starting_price) > 999999999) {
             return res.status(400).json({
                 error: "Required fields are missing (category, title, starting_price)"
             });

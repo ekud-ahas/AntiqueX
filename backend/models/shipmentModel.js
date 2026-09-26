@@ -126,20 +126,10 @@ const markDelivered = async (shipmentId, buyerId) => {
         // 3. RELEASE ESCROW -> Pay Seller
         const paymentAmount = data.amount;
         
-        const sellerWalletRes = await client.query(
-            `INSERT INTO wallets (user_id, balance)
-             VALUES ($1, $2)
-             ON CONFLICT (user_id)
-             DO UPDATE SET balance = wallets.balance + $2
-             RETURNING wallet_id`,
-            [data.seller_id, paymentAmount]
-        );
-        const sellerWalletId = sellerWalletRes.rows[0].wallet_id;
-
+        // 3. RELEASE ESCROW -> Pay Seller (Using the Stored Procedure as per project requirements)
         await client.query(
-            `INSERT INTO wallet_transactions (wallet_id, txn_id, type, amount)
-             VALUES ($1, $2, 'sale_proceeds', $3)`,
-            [sellerWalletId, data.txn_id, paymentAmount]
+            'CALL release_escrow($1, $2, $3)',
+            [data.txn_id, data.seller_id, paymentAmount]
         );
         
         // 4. Notify Seller

@@ -195,3 +195,60 @@ CREATE TABLE IF NOT EXISTS revoked_tokens (
 );
 
 CREATE INDEX IF NOT EXISTS idx_revoked_tokens_token ON revoked_tokens(token);
+-- 20. ADMIN AUDIT LOG (For trigger)
+CREATE TABLE IF NOT EXISTS admin_audit_log (
+    log_id SERIAL PRIMARY KEY,
+    action VARCHAR(255) NOT NULL,
+    performed_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 21. TRIGGERS
+CREATE OR REPLACE FUNCTION log_dispute_trigger()
+RETURNS TRIGGER AS $$
+BEGIN
+    INSERT INTO admin_audit_log (action) 
+    VALUES ('New dispute raised by User ' || NEW.raised_by || ' for Shipment ' || NEW.shipment_id);
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS after_dispute_insert ON disputes;
+CREATE TRIGGER after_dispute_insert
+AFTER INSERT ON disputes
+FOR EACH ROW EXECUTE FUNCTION log_dispute_trigger();
+
+-- 22. FUNCTIONS
+CREATE OR REPLACE FUNCTION get_user_total_spent(uid INT)
+RETURNS NUMERIC AS $$
+DECLARE
+    total NUMERIC;
+BEGIN
+    SELECT COALESCE(SUM(amount), 0) INTO total 
+    FROM wallet_transactions 
+    WHERE wallet_id = (SELECT wallet_id FROM wallets WHERE user_id = uid)
+    AND type IN ('bid_escrow', 'withdrawal');
+    RETURN total;
+END;
+$$ LANGUAGE plpgsql;
+
+-- 23. PROCEDURES
+CREATE OR REPLACE PROCEDURE release_escrow(p_txn_id INT, p_seller_id INT, p_proceeds NUMERIC)
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    s_wallet_id INT;
+BEGIN
+    -- Get or Create seller wallet
+    SELECT wallet_id INTO s_wallet_id FROM wallets WHERE user_id = p_seller_id FOR UPDATE;
+    IF NOT FOUND THEN
+        INSERT INTO wallets (user_id, balance) VALUES (p_seller_id, 0.00) RETURNING wallet_id INTO s_wallet_id;
+    END IF;
+    
+    -- Update wallet balance
+    UPDATE wallets SET balance = balance + p_proceeds WHERE wallet_id = s_wallet_id;
+    
+    -- Insert wallet transaction
+    INSERT INTO wallet_transactions (wallet_id, txn_id, type, amount)
+    VALUES (s_wallet_id, p_txn_id, 'sale_proceeds', p_proceeds);
+END;
+$$;
