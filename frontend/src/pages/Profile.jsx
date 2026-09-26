@@ -7,8 +7,8 @@ function Profile() {
     const [profile, setProfile] = useState({
         full_name: "",
         phone_number: "",
-        username: "",
-        email: ""
+        username: user?.username || "",
+        email: user?.email || ""
     });
     const [addresses, setAddresses] = useState([]);
     
@@ -107,11 +107,11 @@ function Profile() {
                 <form onSubmit={handleUpdateProfile} style={{ marginTop: "20px" }}>
                     <div className="form-row">
                         <div className="form-group">
-                            <label>Username (Read Only)</label>
+                            <label>Username</label>
                             <input type="text" value={profile.username} readOnly style={{ background: "#f5f5f5" }} />
                         </div>
                         <div className="form-group">
-                            <label>Email (Read Only)</label>
+                            <label>Email</label>
                             <input type="email" value={profile.email} readOnly style={{ background: "#f5f5f5" }} />
                         </div>
                     </div>
