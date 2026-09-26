@@ -14,6 +14,7 @@ import SellItem from "./pages/SellItem";
 import MyItems from "./pages/MyItems";
 import EditItem from "./pages/EditItem";
 import Wallet from "./pages/Wallet";
+import Profile from "./pages/Profile";
 import Purchases from "./pages/Purchases";
 import AdminDashboard from "./pages/AdminDashboard";
 import Notifications from "./pages/Notifications";
@@ -38,6 +39,7 @@ function App() {
         <Route path="/my-items" element={<MyItems />} />
         <Route path="/my-items/:id/edit" element={<EditItem />} />
         <Route path="/wallet" element={<Wallet />} />
+              <Route path="/profile" element={<Profile />} />
         <Route path="/purchases" element={<Purchases />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>

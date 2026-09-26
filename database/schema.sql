@@ -3,6 +3,7 @@ CREATE TABLE users (
     user_id SERIAL PRIMARY KEY,
     username VARCHAR(50) NOT NULL UNIQUE,
     full_name VARCHAR(100) NOT NULL,
+    phone_number VARCHAR(20),
     email VARCHAR(100) NOT NULL UNIQUE,
     password TEXT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'active'

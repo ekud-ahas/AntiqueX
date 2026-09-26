@@ -85,7 +85,21 @@ const placeBid = async (req, res) => {
             });
         }
 
+
+        const addressCheck = await require('../config/db').query(
+            "SELECT address_id FROM addresses WHERE user_id = $1 LIMIT 1",
+            [bidder_id]
+        );
+        
+        if (addressCheck.rows.length === 0) {
+            return res.status(400).json({
+                error: "No delivery address found. Please add an address to place a bid.",
+                code: "NO_ADDRESS"
+            });
+        }
+
         const newBid = await auctionModel.placeBidWithLock({
+
             id,
             bidderId: bidder_id,
             bidAmount: Number(bid_amount)

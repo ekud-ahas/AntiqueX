@@ -1,4 +1,4 @@
-import { useContext } from "react";
+import { useContext, useState, useRef, useEffect } from "react";
 import { NavLink, Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../context/AuthContext";
 import "./Navbar.css";
@@ -6,6 +6,18 @@ import "./Navbar.css";
 function Navbar() {
     const { user, logout } = useContext(AuthContext);
     const navigate = useNavigate();
+    const [dropdownOpen, setDropdownOpen] = useState(false);
+    const dropdownRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                setDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, []);
 
     const isAdmin = user && (user.role === "admin" || user.role === "moderator");
     const isFullAdmin = user && user.role === "admin"; // full admin only
@@ -57,30 +69,36 @@ function Navbar() {
 
                 <div className="navbar-account">
                     {user ? (
-                        <>
-                            <span className="welcome">
-                                Hi, <strong>{user.username}</strong>{" "}
-                                <span style={{
-                                    fontSize: "0.72rem",
-                                    padding: "2px 7px",
-                                    borderRadius: "10px",
-                                    background: isFullAdmin ? "#d35400" : isAdmin ? "#16a085" : "#2980b9",
-                                    color: "#fff",
-                                    fontWeight: "bold",
-                                    textTransform: "uppercase",
-                                    marginLeft: "4px"
-                                }}>
-                                    {user.role}
-                                </span>
-                            </span>
-
-                            <button
-                                onClick={handleLogout}
-                                className="logout-button"
-                            >
-                                Logout
+                        <div className="profile-dropdown-container" ref={dropdownRef}>
+                            <button className="profile-avatar-btn" onClick={() => setDropdownOpen(!dropdownOpen)}>
+                                <div className="avatar-circle">
+                                    {user.username.charAt(0).toUpperCase()}
+                                </div>
                             </button>
-                        </>
+                            
+                            {dropdownOpen && (
+                                <div className="profile-dropdown-menu">
+                                    <div className="dropdown-header">
+                                        <strong>@{user.username}</strong>
+                                        {isAdmin && (
+                                            <span className="dropdown-role">{user.role}</span>
+                                        )}
+                                    </div>
+                                    <Link to="/profile" className="dropdown-item" onClick={() => setDropdownOpen(false)}>
+                                        Profile Settings
+                                    </Link>
+                                    <button
+                                        onClick={() => {
+                                            setDropdownOpen(false);
+                                            handleLogout();
+                                        }}
+                                        className="dropdown-item logout-item"
+                                    >
+                                        Sign Out
+                                    </button>
+                                </div>
+                            )}
+                        </div>
                     ) : (
                         <>
                             <Link to="/login" className="login-link">Login</Link>

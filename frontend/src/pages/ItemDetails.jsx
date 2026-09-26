@@ -541,9 +541,39 @@ function ItemDetails() {
                     )}
                 </div>
             </div>
+
+            {/* Address Modal Overlay */}
+            {showAddressModal && (
+                <div style={{
+                    position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
+                    background: "rgba(0,0,0,0.5)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 1000
+                }}>
+                    <div style={{
+                        background: "white", padding: "30px", borderRadius: "10px", width: "100%", maxWidth: "400px",
+                        boxShadow: "0 10px 25px rgba(0,0,0,0.2)"
+                    }}>
+                        <h3 style={{ marginTop: 0, marginBottom: "15px", color: "var(--primary)" }}>Delivery Address Required</h3>
+                        <p style={{ fontSize: "14px", color: "var(--muted)", marginBottom: "20px" }}>
+                            You need a delivery address on file to place a bid. Where should we ship this item if you win?
+                        </p>
+                        <form onSubmit={submitAddressAndBid}>
+                            <div className="form-group">
+                                <label>Street Address</label>
+                                <input type="text" value={newAddress.street} onChange={e => setNewAddress({...newAddress, street: e.target.value})} required placeholder="e.g. 12 Lake Road" />
+                            </div>
+                            <div className="form-group">
+                                <label>City</label>
+                                <input type="text" value={newAddress.city} onChange={e => setNewAddress({...newAddress, city: e.target.value})} required placeholder="e.g. Dhaka" />
+                            </div>
+                            <div style={{ display: "flex", gap: "10px", marginTop: "25px" }}>
+                                <button type="button" className="btn btn-outline" style={{ flex: 1 }} onClick={() => setShowAddressModal(false)}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1 }}>Save & Place Bid</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
-
 export default ItemDetails;
-
