@@ -4,7 +4,7 @@ const getProfile = async (req, res) => {
     try {
         const { userId } = req.user;
         const result = await pool.query(
-            "SELECT user_id, username, full_name, email, phone_number, status FROM users WHERE user_id = $1",
+            "SELECT user_id, username, full_name, email, phone_number, profile_picture_url, status FROM users WHERE user_id = $1",
             [userId]
         );
         if (result.rows.length === 0) return res.status(404).json({ error: "User not found" });
@@ -89,10 +89,34 @@ const deleteAddress = async (req, res) => {
     }
 };
 
+
+const uploadPicture = async (req, res) => {
+    try {
+        const { userId } = req.user;
+        if (!req.file) {
+            return res.status(400).json({ error: "No image file provided" });
+        }
+        
+        const imageUrl = `/uploads/${req.file.filename}`;
+        
+        await pool.query(
+            "UPDATE users SET profile_picture_url = $1 WHERE user_id = $2",
+            [imageUrl, userId]
+        );
+        
+        res.json({ message: "Profile picture updated", profile_picture_url: imageUrl });
+    } catch (error) {
+        console.error("UPLOAD PICTURE ERROR:", error);
+        res.status(500).json({ error: "Server error uploading picture" });
+    }
+};
+
 module.exports = {
+
     getProfile,
     updateProfile,
     getAddresses,
     addAddress,
-    deleteAddress
+    deleteAddress,
+    uploadPicture
 };

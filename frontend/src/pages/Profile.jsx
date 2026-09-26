@@ -8,8 +8,10 @@ function Profile() {
         full_name: "",
         phone_number: "",
         username: user?.username || "",
-        email: user?.email || ""
+        email: user?.email || "",
+        profile_picture_url: user?.profile_picture_url || null
     });
+    const [uploadingPic, setUploadingPic] = useState(false);
     const [addresses, setAddresses] = useState([]);
     
     const [newAddress, setNewAddress] = useState({ street: "", city: "" });
@@ -36,6 +38,41 @@ function Profile() {
         loadData();
     }, []);
 
+    const handlePictureUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        
+        const formData = new FormData();
+        formData.append("image", file);
+        
+        setUploadingPic(true);
+        setMessage("");
+        
+        try {
+            const token = sessionStorage.getItem("token");
+            const res = await fetch("/api/profile/picture", {
+                method: "POST",
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            
+            setProfile({ ...profile, profile_picture_url: data.profile_picture_url });
+            
+            // Update session storage
+            const updatedUser = { ...user, profile_picture_url: data.profile_picture_url };
+            sessionStorage.setItem("user", JSON.stringify(updatedUser));
+            // Force reload to update navbar
+            window.location.reload();
+        } catch (err) {
+            setMessage(err.message);
+            setIsError(true);
+        } finally {
+            setUploadingPic(false);
+        }
+    };
+    
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
         setMessage("");
@@ -104,7 +141,37 @@ function Profile() {
 
             <div className="wallet-card" style={{ marginBottom: "30px" }}>
                 <h3 className="wallet-card-title">Account Information</h3>
-                <form onSubmit={handleUpdateProfile} style={{ marginTop: "20px" }}>
+                
+                <div style={{ display: "flex", alignItems: "center", gap: "20px", marginTop: "20px", marginBottom: "25px" }}>
+                    <div style={{ 
+                        width: "80px", height: "80px", borderRadius: "50%", background: "#f1f5f9", 
+                        display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden",
+                        border: "2px solid var(--border)", position: "relative"
+                    }}>
+                        {profile.profile_picture_url ? (
+                            <img src={profile.profile_picture_url} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                <circle cx="12" cy="7" r="4"></circle>
+                            </svg>
+                        )}
+                        {uploadingPic && (
+                            <div style={{ position: "absolute", inset: 0, background: "rgba(255,255,255,0.7)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                                <span style={{ fontSize: "12px", fontWeight: "bold" }}>...</span>
+                            </div>
+                        )}
+                    </div>
+                    <div>
+                        <label htmlFor="pic-upload" className="btn btn-outline" style={{ cursor: "pointer", display: "inline-block", padding: "8px 15px" }}>
+                            {profile.profile_picture_url ? "Change Picture" : "Upload Picture"}
+                        </label>
+                        <input id="pic-upload" type="file" accept="image/*" style={{ display: "none" }} onChange={handlePictureUpload} />
+                        <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "5px" }}>Recommended: Square JPG/PNG</div>
+                    </div>
+                </div>
+
+                <form onSubmit={handleUpdateProfile}>
                     <div className="form-row">
                         <div className="form-group">
                             <label>Username</label>

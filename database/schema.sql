@@ -4,6 +4,7 @@ CREATE TABLE users (
     username VARCHAR(50) NOT NULL UNIQUE,
     full_name VARCHAR(100) NOT NULL,
     phone_number VARCHAR(20),
+    profile_picture_url VARCHAR(255),
     email VARCHAR(100) NOT NULL UNIQUE,
     password TEXT NOT NULL,
     status VARCHAR(20) NOT NULL DEFAULT 'active'
