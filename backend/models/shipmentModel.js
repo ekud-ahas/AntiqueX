@@ -28,7 +28,8 @@ const getShipmentsByUser = async (userId, role) => {
         JOIN auctions auc ON t.auction_id = auc.auction_id
         JOIN items i ON auc.item_id = i.item_id
         JOIN users u_seller ON i.seller_id = u_seller.user_id
-        JOIN users u_buyer ON t.buyer_id = u_buyer.user_id
+        LEFT JOIN bids b ON t.winner_bid_id = b.bid_id
+        JOIN users u_buyer ON b.bidder_id = u_buyer.user_id
         JOIN addresses a ON s.address_id = a.address_id
         WHERE `;
         
@@ -39,7 +40,7 @@ const getShipmentsByUser = async (userId, role) => {
         params.pop(); // remove userId
     } else {
         // Find where user is buyer or seller
-        query += `t.buyer_id = $1 OR i.seller_id = $1 ORDER BY s.shipment_id DESC`;
+        query += `b.bidder_id = $1 OR i.seller_id = $1 ORDER BY s.shipment_id DESC`;
     }
 
     const result = await pool.query(query, params);
@@ -98,9 +99,10 @@ const markDelivered = async (shipmentId, buyerId) => {
         
         // 1. Check ownership & get txn details
         const check = await client.query(
-            `SELECT t.buyer_id, t.amount, i.seller_id, t.txn_id
+            `SELECT b.bidder_id AS buyer_id, t.amount, i.seller_id, t.txn_id
              FROM shipments s
              JOIN transactions t ON s.txn_id = t.txn_id
+             LEFT JOIN bids b ON t.winner_bid_id = b.bid_id
              JOIN auctions auc ON t.auction_id = auc.auction_id
              JOIN items i ON auc.item_id = i.item_id
              WHERE s.shipment_id = $1 FOR UPDATE`,
@@ -158,9 +160,10 @@ const openDispute = async (shipmentId, buyerId, reason) => {
         await client.query("BEGIN");
         
         const check = await client.query(
-            `SELECT t.buyer_id
+            `SELECT b.bidder_id AS buyer_id
              FROM shipments s
              JOIN transactions t ON s.txn_id = t.txn_id
+             LEFT JOIN bids b ON t.winner_bid_id = b.bid_id
              WHERE s.shipment_id = $1 FOR UPDATE`,
             [shipmentId]
         );
