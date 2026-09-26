@@ -113,11 +113,7 @@ const closeAuctionAndRecordWinner = async (auctionId, customClient = null, custo
             );
             let addressId = buyerAddrRes.rows[0]?.address_id;
             if (!addressId) {
-                const newAddr = await client.query(
-                    `INSERT INTO addresses (user_id, street, city) VALUES ($1, 'Default Delivery Address', 'Dhaka') RETURNING address_id`,
-                    [data.bidder_id]
-                );
-                addressId = newAddr.rows[0].address_id;
+                throw new Error("Cannot provision shipment: Buyer has no address on file.");
             }
 
             await client.query(
