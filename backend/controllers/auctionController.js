@@ -79,7 +79,7 @@ const placeBid = async (req, res) => {
         const bidder_id = req.user.userId;
         const { bid_amount } = req.body;
 
-        if (!bid_amount || isNaN(Number(bid_amount)) || Number(bid_amount) <= 0) {
+        if (!bid_amount || isNaN(Number(bid_amount)) || Number(bid_amount) <= 0 || Number(bid_amount) > 999999999) {
             return res.status(400).json({
                 error: "A valid positive bid amount is required"
             });
@@ -107,7 +107,85 @@ const placeBid = async (req, res) => {
     }
 };
 
+
+// End auction early (Protected, Seller only)
+const endAuctionEarly = async (req, res) => {
+    const client = await require('../config/db').connect();
+    try {
+        const { id } = req.params;
+        const seller_id = req.user.userId;
+
+        await client.query("BEGIN");
+
+        // Lock auction for update
+        const auctionRes = await client.query(
+            `SELECT a.auction_id, a.status, i.seller_id 
+             FROM auctions a 
+             JOIN items i ON a.item_id = i.item_id 
+             WHERE a.auction_id = $1 
+             FOR UPDATE`, 
+            [id]
+        );
+
+        if (auctionRes.rows.length === 0) {
+            await client.query("ROLLBACK");
+            return res.status(404).json({ error: "Auction not found" });
+        }
+
+        const auction = auctionRes.rows[0];
+
+        if (Number(auction.seller_id) !== Number(seller_id)) {
+            await client.query("ROLLBACK");
+            return res.status(403).json({ error: "Forbidden: You do not own this auction" });
+        }
+
+        if (auction.status !== 'active') {
+            await client.query("ROLLBACK");
+            return res.status(400).json({ error: "Cannot end early: Auction is not active" });
+        }
+
+        // Check if there are bids
+        const bidsRes = await client.query(
+            `SELECT COUNT(*) as count FROM bids WHERE auction_id = $1`,
+            [auction.auction_id]
+        );
+        const hasBids = Number(bidsRes.rows[0].count) > 0;
+
+        if (!hasBids) {
+            // Cancel auction
+            await client.query(
+                `UPDATE auctions SET status = 'cancelled', end_time = NOW() WHERE auction_id = $1`,
+                [auction.auction_id]
+            );
+            await client.query("COMMIT");
+            return res.json({ message: "Auction ended early. No bids were placed, so the auction was cancelled.", status: "cancelled" });
+        } else {
+            // Close auction naturally with custom notification
+            await client.query(
+                `UPDATE auctions SET end_time = NOW() WHERE auction_id = $1`,
+                [auction.auction_id]
+            );
+            await client.query("COMMIT");
+
+            // Handle transaction creation outside the manual transaction block (because closeAuctionAndRecordWinner uses its own transaction logic if not passed customClient)
+            const customMessage = "The seller ended the auction early and you are the winner! Your held bid has been finalized. Shipment is now pending seller dispatch.";
+            await transactionModel.closeAuctionAndRecordWinner(auction.auction_id, null, customMessage);
+
+            return res.json({ message: "Auction ended early. The topmost bidder has been declared the winner.", status: "ended" });
+        }
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        console.error("END AUCTION EARLY ERROR:", error);
+        res.status(500).json({ error: "Failed to end auction early" });
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = {
+
     getAuction,
-    placeBid
+    placeBid,
+    endAuctionEarly
 };

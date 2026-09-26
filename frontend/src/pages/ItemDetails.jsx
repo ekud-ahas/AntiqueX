@@ -111,7 +111,33 @@ function ItemDetails() {
         ];
     }, [minAllowedBid, minInc]);
 
+
+    const handleEndEarly = async () => {
+        if (!window.confirm("Are you sure you want to end this auction early? If there are bids, the top bidder will win immediately.")) return;
+        
+        try {
+            const token = sessionStorage.getItem("token");
+            if (!token) return;
+            const res = await fetch(`/api/auctions/${auction.auction_id}/end-early`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`
+                }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+            
+            setMessage(data.message);
+            setIsError(false);
+            fetchAuction();
+        } catch (err) {
+            setMessage(err.message);
+            setIsError(true);
+        }
+    };
+
     const handleBid = async (event) => {
+
         event.preventDefault();
         setMessage("");
         setIsError(false);
@@ -156,7 +182,7 @@ function ItemDetails() {
             }
 
             setIsError(false);
-            setMessage("🎉 Bid placed successfully!");
+            setMessage(" Bid placed successfully!");
             setBidAmount("");
 
             await fetchAuction();
@@ -242,7 +268,7 @@ function ItemDetails() {
                     {/* Full Bid History Table */}
                     <div className="bid-history-section">
                         <div className="bid-history-header">
-                            <h3>📜 Bid History</h3>
+                            <h3> Bid History</h3>
                             <span className="badge badge-outline">
                                 {auction.total_bids || 0} {auction.total_bids === 1 ? "bid" : "bids"}
                             </span>
@@ -312,7 +338,7 @@ function ItemDetails() {
                         <div className={`winner-card ${isWinner ? "winner-user-card" : ""}`}>
                             {auction.winner_username ? (
                                 <>
-                                    <div className="winner-icon">🏆</div>
+                                    <div className="winner-icon"></div>
                                     <div className="winner-details">
                                         <h4>Auction Closed</h4>
                                         <p>
@@ -325,7 +351,7 @@ function ItemDetails() {
                                         )}
                                         {isWinner && (
                                             <div className="winner-congrats">
-                                                🎉 Congratulations! You won this antique auction.
+                                                 Congratulations! You won this antique auction.
                                             </div>
                                         )}
                                     </div>
@@ -342,7 +368,7 @@ function ItemDetails() {
                     {/* Countdown / Time Banner */}
                     {!isEnded && auction.status === "active" && (
                         <div className="countdown-card">
-                            <div className="countdown-icon">⏳</div>
+                            <div className="countdown-icon"></div>
                             <div className="countdown-info">
                                 <span className="countdown-label">Time Remaining</span>
                                 <span className="countdown-timer">{timeLeft || "Calculating…"}</span>
@@ -417,7 +443,28 @@ function ItemDetails() {
                             </div>
                         </div>
 
+                        
+                        {currentUser?.user_id === auction.seller_id && !isEnded && auction.status === "active" && (
+                            <div className="spec-row" style={{ marginTop: "15px", borderTop: "1px dashed var(--border)", paddingTop: "15px" }}>
+                                <button
+                                    onClick={handleEndEarly}
+                                    style={{
+                                        background: "#e74c3c",
+                                        color: "white",
+                                        border: "none",
+                                        padding: "8px 12px",
+                                        borderRadius: "4px",
+                                        cursor: "pointer",
+                                        width: "100%",
+                                        fontWeight: "bold"
+                                    }}
+                                >
+                                    Stop Auction Early
+                                </button>
+                            </div>
+                        )}
                         <WatchlistButton itemId={auction.item_id} />
+
                     </div>
 
                     {/* Bidding Section */}
@@ -436,7 +483,7 @@ function ItemDetails() {
                                 color: "#1b6ca8",
                                 marginBottom: "14px"
                             }}>
-                                🛡️ <strong>Escrow Pre-Funded Bidding:</strong> Your bid amount will be held from your wallet. If you are outbid, it is immediately refunded back to your wallet in full!
+                                 <strong>Escrow Pre-Funded Bidding:</strong> Your bid amount will be held from your wallet. If you are outbid, it is immediately refunded back to your wallet in full!
                             </div>
 
                             {/* Quick Bid Chips */}

@@ -43,7 +43,29 @@ function MyItems() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+
+  const handleEndEarly = async (e, auction_id) => {
+    e.stopPropagation();
+    if (!window.confirm("Are you sure you want to end this auction early? If there are bids, the top bidder will win immediately.")) return;
+
+    try {
+      const response = await authFetch(
+        `/api/auctions/${auction_id}/end-early`,
+        { method: "POST" }
+      );
+      const data = await response.json();
+      if (!response.ok) {
+        setError(data.error || "Failed to end auction.");
+        return;
+      }
+      fetchMyItems();
+    } catch {
+      setError("Could not connect to the server.");
+    }
+  };
+
   const handleDelete = async (item_id) => {
+
     if (!window.confirm("Are you sure you want to delete this listing? This cannot be undone.")) {
       return;
     }
@@ -147,8 +169,20 @@ function MyItems() {
                   )}
                 </div>
 
+
                 <div className="my-item-actions">
+                  {item.auction_status === 'active' && item.auction_id && (
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ background: "#e74c3c", color: "white", borderColor: "#e74c3c" }}
+                      onClick={(e) => handleEndEarly(e, item.auction_id)}
+                    >
+                      End Early
+                    </button>
+                  )}
                   <Link to={`/my-items/${item.item_id}/edit`} className="btn btn-outline" onClick={(e) => e.stopPropagation()}>
+
                     Edit Details
                   </Link>
                   <button

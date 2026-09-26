@@ -3,7 +3,7 @@ const pool = require("../config/db");
 /**
  * Close an auction, select highest bidder, create transaction, and send notifications
  */
-const closeAuctionAndRecordWinner = async (auctionId, customClient = null) => {
+const closeAuctionAndRecordWinner = async (auctionId, customClient = null, customWinnerNotification = null) => {
     const client = customClient || await pool.connect();
     const shouldManageTransaction = !customClient;
 
@@ -135,7 +135,7 @@ const closeAuctionAndRecordWinner = async (auctionId, customClient = null) => {
                 `,
                 [
                     data.bidder_id,
-                    `Congratulations! You won the auction for "${data.title}". Your held bid of BDT ${winningAmount.toLocaleString()} has been finalized. Shipment is now pending seller dispatch.`
+                    customWinnerNotification || `Congratulations! You won the auction for "${data.title}". Your held bid of BDT ${winningAmount.toLocaleString()} has been finalized. Shipment is now pending seller dispatch.`
                 ]
             );
 
