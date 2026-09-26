@@ -329,7 +329,7 @@ function EditItem() {
               />
               {hasBids && (
                 <span className="field-hint" style={{ color: "var(--accent)" }}>
-                  🔒 Locked: {auctionInfo.total_bids} bid(s) already placed.
+                   Locked: {auctionInfo.total_bids} bid(s) already placed.
                 </span>
               )}
             </div>
@@ -337,7 +337,7 @@ function EditItem() {
 
           {/* Auction Settings Section */}
           <div className="auction-settings-section">
-            <h3>⏱ Auction Settings & Schedule</h3>
+            <h3> Auction Settings & Schedule</h3>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", fontSize: "13px", background: "white", padding: "12px", borderRadius: "var(--radius-sm)", border: "1px solid var(--border)" }}>
               <div>
                 <span style={{ color: "var(--muted)", display: "block" }}>Auction Status:</span>

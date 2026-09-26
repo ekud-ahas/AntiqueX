@@ -89,7 +89,7 @@ function WatchlistButton({ itemId }) {
         className={isWatching ? "btn btn-danger" : "btn btn-outline"}
         style={{ width: "100%", padding: "10px 16px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px" }}
       >
-        <span>{isWatching ? "❤️" : "🤍"}</span>
+        <span>{isWatching ? "" : ""}</span>
         <span>{isWatching ? "Remove from Watchlist" : "Save to Watchlist"}</span>
       </button>
       {message && <p style={{ color: "var(--warning)", fontSize: "13px", margin: "6px 0 0", textAlign: "center" }}>{message}</p>}

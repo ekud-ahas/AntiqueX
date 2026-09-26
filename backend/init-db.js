@@ -25,7 +25,7 @@ async function initDB() {
         console.log('\nVerification: ' + tablesRes.rows.length + ' tables found in public schema:');
         for (const row of tablesRes.rows) {
             const countRes = await pool.query('SELECT COUNT(*) FROM ' + row.table_name);
-            console.log('  ✓ ' + row.table_name.padEnd(22) + ': ' + countRes.rows[0].count + ' rows');
+            console.log('   ' + row.table_name.padEnd(22) + ': ' + countRes.rows[0].count + ' rows');
         }
         console.log('\nDatabase initialization complete!');
     } catch (err) {

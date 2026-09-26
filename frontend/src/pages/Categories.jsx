@@ -6,10 +6,10 @@ import "./Categories.css";
 
 const CATEGORY_ICONS = {
     "Antique Furniture": "🪑",
-    "Fine Art & Paintings": "🎨",
-    "Vintage Jewelry": "💎",
-    "Rare Coins & Currency": "👛",
-    "Ancient Sculptures": "🏺",
+    "Fine Art & Paintings": "",
+    "Vintage Jewelry": "",
+    "Rare Coins & Currency": "",
+    "Ancient Sculptures": "",
 };
 
 function Categories() {
@@ -77,7 +77,7 @@ function Categories() {
                 return;
             }
 
-            setAdminMsg(`✅ Category "${data.category.category_name}" created successfully!`);
+            setAdminMsg(` Category "${data.category.category_name}" created successfully!`);
             setNewCategoryName("");
             setNewCategoryDesc("");
             fetchCategories();
@@ -101,7 +101,7 @@ function Categories() {
                 setAdminError(data.error || "Failed to delete category");
                 return;
             }
-            setAdminMsg(`✅ Category "${cat.category_name}" deleted successfully!`);
+            setAdminMsg(` Category "${cat.category_name}" deleted successfully!`);
             fetchCategories();
         } catch {
             setAdminError("Failed to connect to backend server.");
@@ -144,7 +144,7 @@ function Categories() {
                     borderRadius: "12px"
                 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", marginBottom: "0.8rem" }}>
-                        <span style={{ fontSize: "1.3rem" }}>🛡️</span>
+                        <span style={{ fontSize: "1.3rem" }}></span>
                         <h3 style={{ margin: 0, color: "#d35400" }}>Admin Control: Add New Category</h3>
                         <span style={{ fontSize: "0.75rem", background: "#d35400", color: "#fff", padding: "2px 8px", borderRadius: "10px", textTransform: "uppercase", fontWeight: "bold" }}>
                             {user.role}
@@ -205,7 +205,7 @@ function Categories() {
                             key={category.category_id}
                         >
                             <div className="category-icon">
-                                {CATEGORY_ICONS[category.category_name] || "⚜"}
+                                {CATEGORY_ICONS[category.category_name] || ""}
                             </div>
 
                             <h2>{category.category_name}</h2>
@@ -239,7 +239,7 @@ function Categories() {
                                         transition: "background 0.2s"
                                     }}
                                 >
-                                    🗑️ Delete Category
+                                     Delete Category
                                 </button>
                             )}
                         </div>

@@ -205,21 +205,21 @@ function Purchases() {
                             className={`wallet-tab-btn ${activeTab === "buyer" ? "active" : ""}`}
                             onClick={() => setActiveTab("buyer")}
                         >
-                            📦 My Purchases
+                             My Purchases
                         </button>
                     
                         <button 
                             className={`wallet-tab-btn ${activeTab === "seller" ? "active" : ""}`}
                             onClick={() => setActiveTab("seller")}
                         >
-                            🚚 My Sales
+                             My Sales
                         </button>
                 </div>
 
                 <div className="wallet-content-area">
                     {filteredTxns.length === 0 ? (
                         <div className="empty-state">
-                            <div style={{ fontSize: "40px", marginBottom: "15px" }}>🏺</div>
+                            <div style={{ fontSize: "40px", marginBottom: "15px" }}></div>
                             <h3>No {activeTab === "buyer" ? "purchases" : "sales"} found</h3>
                             <p style={{ color: "var(--muted)" }}>When you win or sell an item, it will appear here.</p>
                             <Link to="/items" className="btn btn-primary" style={{ marginTop: "12px", display: "inline-block", color: "#fff" }}>
@@ -387,8 +387,8 @@ function Purchases() {
                     <div className="wallet-modal-overlay" onClick={closeCheckout}>
                         <div className="wallet-modal-content" style={{ maxWidth: "500px", padding: "30px", textAlign: "left" }} onClick={(e) => e.stopPropagation()}>
                             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                                <h2 style={{ margin: 0 }}>💳 Checkout & Pay</h2>
-                                <button style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer" }} onClick={closeCheckout}>✕</button>
+                                <h2 style={{ margin: 0 }}> Checkout & Pay</h2>
+                                <button style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer" }} onClick={closeCheckout}></button>
                             </div>
 
                             <div style={{ background: "#f8fafc", padding: "15px", borderRadius: "8px", marginBottom: "20px" }}>
@@ -414,7 +414,7 @@ function Purchases() {
                                             style={{ flex: 1, padding: "10px", border: `2px solid ${paymentType === 'wallet' ? 'var(--primary)' : '#e2e8f0'}`, borderRadius: "8px", cursor: "pointer" }}
                                             onClick={() => setPaymentType("wallet")}
                                         >
-                                            <strong>💰 Wallet</strong>
+                                            <strong> Wallet</strong>
                                             <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px" }}>Available: ৳{walletBalance.toLocaleString()}</div>
                                         </div>
 
@@ -422,7 +422,7 @@ function Purchases() {
                                             style={{ flex: 1, padding: "10px", border: `2px solid ${paymentType === 'method' ? 'var(--primary)' : '#e2e8f0'}`, borderRadius: "8px", cursor: "pointer" }}
                                             onClick={() => setPaymentType("method")}
                                         >
-                                            <strong>💳 Saved Method</strong>
+                                            <strong> Saved Method</strong>
                                             <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px" }}>Bkash, Card</div>
                                         </div>
                                     </div>
@@ -430,7 +430,7 @@ function Purchases() {
 
                                 {paymentType === "wallet" && walletBalance < Number(checkoutTxn.amount) && (
                                     <div className="wallet-alert alert-error" style={{ padding: "10px", fontSize: "13px" }}>
-                                        ⚠️ Insufficient balance (Short by ৳{(Number(checkoutTxn.amount) - walletBalance).toLocaleString()}). 
+                                         Insufficient balance (Short by ৳{(Number(checkoutTxn.amount) - walletBalance).toLocaleString()}). 
                                         <Link to="/wallet" style={{ marginLeft: "10px", fontWeight: "bold", textDecoration: "underline" }}>Deposit Funds</Link>
                                     </div>
                                 )}

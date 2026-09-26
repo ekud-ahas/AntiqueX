@@ -243,7 +243,7 @@ function SellItem() {
                     </div>
 
                     <div className="auction-settings-section">
-                        <h3>⏱ Auction Settings</h3>
+                        <h3> Auction Settings</h3>
                         <p className="auction-settings-hint">
                             Configure how long the auction will run and the minimum bid increment.
                         </p>

@@ -85,7 +85,7 @@ function AdminDashboard() {
 
             if (!res.ok) throw new Error(data.error || "Failed to update user status");
 
-            setActionMsg(`✅ Success: User @${targetUser.username} is now ${newStatus.toUpperCase()}`);
+            setActionMsg(` Success: User @${targetUser.username} is now ${newStatus.toUpperCase()}`);
             setUsersList((prev) =>
                 prev.map((u) => (u.user_id === targetUser.user_id ? { ...u, status: newStatus } : u))
             );
@@ -118,7 +118,7 @@ function AdminDashboard() {
 
             if (!res.ok) throw new Error(data.error || "Failed to update auction status");
 
-            setActionMsg(`🛡️ Item "${item.title}" auction status set to ${newStatus.toUpperCase()}`);
+            setActionMsg(` Item "${item.title}" auction status set to ${newStatus.toUpperCase()}`);
             setItemsList((prev) =>
                 prev.map((i) =>
                     i.auction_id === item.auction_id ? { ...i, auction_status: newStatus } : i
@@ -136,7 +136,7 @@ function AdminDashboard() {
         return (
             <div className="admin-forbidden">
                 <div className="forbidden-box">
-                    <span className="forbidden-icon">🚫</span>
+                    <span className="forbidden-icon"></span>
                     <h1>403 — Access Denied</h1>
                     <p>
                         You do not have permission to view the Admin Dashboard.
@@ -152,13 +152,13 @@ function AdminDashboard() {
     }
 
     if (loading) return <div className="admin-loading">Loading administrative console…</div>;
-    if (error) return <div className="admin-error">❌ Error: {error}</div>;
+    if (error) return <div className="admin-error"> Error: {error}</div>;
 
     return (
         <div className="admin-dashboard">
             <div className="admin-header">
                 <div>
-                    <h1>⚙️ Administrative Control Panel</h1>
+                    <h1> Administrative Control Panel</h1>
                     <p className="admin-subtitle">
                         Logged in as <strong>{user.username}</strong>{" "}
                         <span className={`role-badge ${!isFullAdmin ? "role-badge-moderator" : ""}`}>
@@ -175,7 +175,7 @@ function AdminDashboard() {
                 {isFullAdmin && (
                     <div className="admin-header-actions">
                         <Link to="/categories" className="action-btn">
-                            🗂️ Manage Categories
+                             Manage Categories
                         </Link>
                     </div>
                 )}
@@ -185,7 +185,7 @@ function AdminDashboard() {
             {actionMsg && (
                 <div className="admin-alert-banner">
                     <span>{actionMsg}</span>
-                    <button onClick={() => setActionMsg("")}>✕</button>
+                    <button onClick={() => setActionMsg("")}></button>
                 </div>
             )}
 
@@ -195,21 +195,21 @@ function AdminDashboard() {
                     className={`tab-btn ${activeTab === "overview" ? "active" : ""}`}
                     onClick={() => setActiveTab("overview")}
                 >
-                    📊 Overview & Stats
+                     Overview & Stats
                 </button>
                 {isFullAdmin && (
                     <button
                         className={`tab-btn ${activeTab === "users" ? "active" : ""}`}
                         onClick={() => setActiveTab("users")}
                     >
-                        👥 User Directory ({usersList.length})
+                         User Directory ({usersList.length})
                     </button>
                 )}
                 <button
                     className={`tab-btn ${activeTab === "items" ? "active" : ""}`}
                     onClick={() => setActiveTab("items")}
                 >
-                    🛡️ Item Moderation ({itemsList.length})
+                     Item Moderation ({itemsList.length})
                 </button>
             </div>
 
@@ -218,25 +218,25 @@ function AdminDashboard() {
                 <div>
                     <div className="stats-grid">
                         <div className="stat-card blue">
-                            <div className="stat-icon">👤</div>
+                            <div className="stat-icon"></div>
                             <div className="stat-value">{stats.totalUsers.toLocaleString()}</div>
                             <div className="stat-label">Registered Customers</div>
                         </div>
 
                         <div className="stat-card green">
-                            <div className="stat-icon">🔨</div>
+                            <div className="stat-icon"></div>
                             <div className="stat-value">{stats.activeAuctions.toLocaleString()}</div>
                             <div className="stat-label">Active Auctions</div>
                         </div>
 
                         <div className="stat-card orange">
-                            <div className="stat-icon">📦</div>
+                            <div className="stat-icon"></div>
                             <div className="stat-value">{stats.totalItems.toLocaleString()}</div>
                             <div className="stat-label">Total Artifacts Listed</div>
                         </div>
 
                         <div className="stat-card purple">
-                            <div className="stat-icon">💰</div>
+                            <div className="stat-icon"></div>
                             <div className="stat-value">
                                 ৳{stats.totalSalesVolume.toLocaleString(undefined, {
                                     minimumFractionDigits: 2,
@@ -247,7 +247,7 @@ function AdminDashboard() {
                         </div>
 
                         <div className="stat-card teal">
-                            <div className="stat-icon">✅</div>
+                            <div className="stat-icon"></div>
                             <div className="stat-value">{stats.totalTransactions.toLocaleString()}</div>
                             <div className="stat-label">Completed Transactions</div>
                         </div>

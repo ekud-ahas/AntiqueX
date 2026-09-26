@@ -110,7 +110,7 @@ function Items() {
     return (
         <div className="items-page">
             <div className="items-header">
-                <h1>⚜️ Live Antique Auctions</h1>
+                <h1> Live Antique Auctions</h1>
                 <p>
                     Explore verified historical artifacts, rare coins, and fine heirlooms available for active bidding.
                 </p>
@@ -119,7 +119,7 @@ function Items() {
             {/* ── Search & Filter Controls ────────────────────────── */}
             <div className="auction-filter-bar">
                 <div className="search-box">
-                    <span className="search-icon">🔍</span>
+                    <span className="search-icon"></span>
                     <input
                         type="text"
                         placeholder="Search antiques by title, keyword, era..."
@@ -132,7 +132,7 @@ function Items() {
                             className="clear-search-btn"
                             onClick={() => setSearchQuery("")}
                         >
-                            ✕
+                            
                         </button>
                     )}
                 </div>
@@ -161,10 +161,10 @@ function Items() {
                             onChange={(e) => setSortBy(e.target.value)}
                             className="filter-select"
                         >
-                            <option value="ending_soon">⏱️ Ending Soonest</option>
-                            <option value="newest">✨ Newest Listed</option>
-                            <option value="price_asc">💵 Price: Low to High</option>
-                            <option value="price_desc">💎 Price: High to Low</option>
+                            <option value="ending_soon"> Ending Soonest</option>
+                            <option value="newest"> Newest Listed</option>
+                            <option value="price_asc"> Price: Low to High</option>
+                            <option value="price_desc"> Price: High to Low</option>
                         </select>
                     </div>
                 </div>
@@ -191,7 +191,7 @@ function Items() {
 
             {filteredItems.length === 0 ? (
                 <div className="no-results-box">
-                    <span style={{ fontSize: "3rem" }}>🏺</span>
+                    <span style={{ fontSize: "3rem" }}></span>
                     <h3>No matching antiques found</h3>
                     <p>Try refining your search terms or clearing category filters.</p>
                 </div>
@@ -259,7 +259,7 @@ function Items() {
                                             <span className="condition-chip">{item.condition}</span>
                                         )}
                                         {item.total_bids > 0 && (
-                                            <span className="bids-chip">🔥 {item.total_bids} bids</span>
+                                            <span className="bids-chip"> {item.total_bids} bids</span>
                                         )}
                                     </div>
 

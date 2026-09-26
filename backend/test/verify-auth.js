@@ -121,7 +121,7 @@ async function runTests() {
             console.log("Status (Expect 200):", ownWalletRes.status);
             console.log("Wallet Balance:", ownWalletRes.data?.balance);
 
-            console.log("\n✅ ALL 8 TESTS COMPLETED SUCCESSFULLY!");
+            console.log("\n ALL 8 TESTS COMPLETED SUCCESSFULLY!");
         } catch (err) {
             console.error("Test error:", err);
         } finally {

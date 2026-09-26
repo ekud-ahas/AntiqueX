@@ -38,7 +38,7 @@ function Home() {
                 <div className="home-features">
 
                     <div className="feature-card">
-                        <div className="feature-icon">🔍</div>
+                        <div className="feature-icon"></div>
                         <h3>Browse</h3>
                         <p>
                             Explore curated antiques across five
@@ -48,7 +48,7 @@ function Home() {
                     </div>
 
                     <div className="feature-card">
-                        <div className="feature-icon">🏷️</div>
+                        <div className="feature-icon"></div>
                         <h3>Bid</h3>
                         <p>
                             Place competitive bids on live auctions.
@@ -57,7 +57,7 @@ function Home() {
                     </div>
 
                     <div className="feature-card">
-                        <div className="feature-icon">💼</div>
+                        <div className="feature-icon"></div>
                         <h3>Sell</h3>
                         <p>
                             List your own antique items in minutes

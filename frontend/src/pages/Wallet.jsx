@@ -244,25 +244,25 @@ function Wallet() {
                         className={`wallet-tab-btn ${activeTab === "overview" ? "active" : ""}`}
                         onClick={() => { setActiveTab("overview"); setMessage(""); }}
                     >
-                        📊 Overview
+                         Overview
                     </button>
                     <button 
                         className={`wallet-tab-btn ${activeTab === "deposit" ? "active" : ""}`}
                         onClick={() => { setActiveTab("deposit"); setMessage(""); }}
                     >
-                        📥 Deposit Funds
+                         Deposit Funds
                     </button>
                     <button 
                         className={`wallet-tab-btn ${activeTab === "withdraw" ? "active" : ""}`}
                         onClick={() => { setActiveTab("withdraw"); setMessage(""); }}
                     >
-                        📤 Withdraw Funds
+                         Withdraw Funds
                     </button>
                     <button 
                         className={`wallet-tab-btn ${activeTab === "methods" ? "active" : ""}`}
                         onClick={() => { setActiveTab("methods"); setMessage(""); }}
                     >
-                        💳 Saved Methods
+                         Saved Methods
                     </button>
                 </div>
 
@@ -273,7 +273,7 @@ function Wallet() {
                     {showSuccessModal && (
                         <div className="wallet-modal-overlay">
                             <div className="wallet-modal-content">
-                                <div className="modal-icon">🎉</div>
+                                <div className="modal-icon"></div>
                                 <h2>Success!</h2>
                                 <p>{successMsg}</p>
                                 <button 
@@ -290,12 +290,11 @@ function Wallet() {
                     {/* Tab: Overview */}
                     {activeTab === "overview" && (
                         <div className="wallet-card fade-in">
-                            <h3 className="wallet-card-title">Welcome to your Wallet</h3>
-                            <p className="wallet-card-desc">Select an action from the menu above to manage your funds.</p>
+                            
                             
                             <div className="wallet-history-section">
                                 <div className="history-header">
-                                    <h3>📜 Transaction Logs</h3>
+                                    <h3> Transaction Logs</h3>
                                     <span className="history-badge">
                                         {wallet?.transactions?.length || 0} records
                                     </span>
@@ -320,12 +319,12 @@ function Wallet() {
                                                         <tr key={tx.wallet_txn_id}>
                                                             <td>
                                                                 <span className={`type-badge ${tx.type}`}>
-                                                                    {tx.type === "deposit" && "📥 Deposit"}
-                                                                    {tx.type === "withdrawal" && "📤 Withdrawal"}
-                                                                    {tx.type === "payment" && "🛍️ Item Purchase"}
-                                                                    {tx.type === "sale_proceeds" && "💰 Auction Earnings"}
-                                                                    {tx.type === "bid_escrow" && "🔒 Escrow Hold"}
-                                                                    {tx.type === "bid_refund" && "🔓 Escrow Refund"}
+                                                                    {tx.type === "deposit" && " Deposit"}
+                                                                    {tx.type === "withdrawal" && " Withdrawal"}
+                                                                    {tx.type === "payment" && " Item Purchase"}
+                                                                    {tx.type === "sale_proceeds" && " Auction Earnings"}
+                                                                    {tx.type === "bid_escrow" && " Escrow Hold"}
+                                                                    {tx.type === "bid_refund" && " Escrow Refund"}
                                                                 </span>
                                                             </td>
                                                             <td className={`amt-cell ${isCredit ? "credit" : "debit"}`}>
@@ -560,7 +559,7 @@ function Wallet() {
                                     {paymentMethods.map((m) => (
                                         <div key={m.method_id} className="saved-method-box">
                                             <div className="method-details">
-                                                <span className="method-icon">💳</span>
+                                                <span className="method-icon"></span>
                                                 <div className="method-text">
                                                     <strong>{m.method_name}</strong>
                                                     <span className="method-sub">

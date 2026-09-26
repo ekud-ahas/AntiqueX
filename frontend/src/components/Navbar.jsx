@@ -20,7 +20,7 @@ function Navbar() {
             <div className="navbar-container">
 
                 <Link to="/" className="navbar-logo">
-                    <span className="navbar-logo-icon">⚜</span>
+                    <span className="navbar-logo-icon"></span>
                     AntiqueX
                 </Link>
 
