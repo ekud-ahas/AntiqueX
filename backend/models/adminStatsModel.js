@@ -236,6 +236,7 @@ const getAllDisputes = async () => {
             d.reason,
             d.date AS raised_at,
             s.shipment_id,
+            s.status AS shipment_status,
             s.carrier,
             s.tracking_number,
             i.title AS item_title,

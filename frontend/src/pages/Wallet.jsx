@@ -314,7 +314,7 @@ function Wallet() {
                                             </thead>
                                             <tbody>
                                                 {wallet.transactions.map((tx) => {
-                                                    const isCredit = tx.type === "deposit" || tx.type === "sale_proceeds" || tx.type === "bid_refund";
+                                                    const isCredit = tx.type === "deposit" || tx.type === "sale_proceeds" || tx.type === "bid_refund" || tx.type === "dispute_refund" || tx.type === "auction_cancel_refund";
                                                     return (
                                                         <tr key={tx.wallet_txn_id}>
                                                             <td>
@@ -325,6 +325,8 @@ function Wallet() {
                                                                     {tx.type === "sale_proceeds" && " Auction Earnings"}
                                                                     {tx.type === "bid_escrow" && " Escrow Hold"}
                                                                     {tx.type === "bid_refund" && " Escrow Refund"}
+                                                                    {tx.type === "dispute_refund" && " Refund"}
+                                                                    {tx.type === "auction_cancel_refund" && " Refund"}
                                                                 </span>
                                                             </td>
                                                             <td className={`amt-cell ${isCredit ? "credit" : "debit"}`}>

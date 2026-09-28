@@ -245,7 +245,7 @@ function AdminDashboard() {
                     className={`tab-btn ${activeTab === "disputes" ? "active" : ""}`}
                     onClick={() => setActiveTab("disputes")}
                 >
-                     Disputes (${disputesList.length})
+                     Disputes ({disputesList.length})
                 </button>
             </div>
 
@@ -480,7 +480,7 @@ function AdminDashboard() {
                                         </div>
                                     </div>
 
-                                    {d.dispute_status === 'open' && (
+                                    {d.dispute_status === 'open' ? (
                                         <div style={{ display: "flex", gap: "10px", borderTop: "1px solid var(--border)", paddingTop: "15px" }}>
                                             <button 
                                                 onClick={() => handleResolveDispute(d.dispute_id, 'refund_buyer')}
@@ -496,6 +496,15 @@ function AdminDashboard() {
                                             >
                                                 Side with Seller (Release)
                                             </button>
+                                        </div>
+                                    ) : (
+                                        <div style={{ borderTop: "1px solid var(--border)", paddingTop: "15px", fontWeight: "bold" }}>
+                                            Resolution Decision: 
+                                            {d.shipment_status === 'dispute_refunded' ? (
+                                                <span style={{ color: "#e74c3c", marginLeft: "10px" }}>Sided with Buyer (Refunded)</span>
+                                            ) : (
+                                                <span style={{ color: "#27ae60", marginLeft: "10px" }}>Sided with Seller (Released)</span>
+                                            )}
                                         </div>
                                     )}
                                 </div>
