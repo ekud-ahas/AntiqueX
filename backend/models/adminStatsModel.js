@@ -227,7 +227,108 @@ const deleteCategory = async (categoryId) => {
     return result.rows[0] || null;
 };
 
+
+const getAllDisputes = async () => {
+    const sql = `
+        SELECT
+            d.dispute_id,
+            d.status AS dispute_status,
+            d.reason,
+            d.date AS raised_at,
+            s.shipment_id,
+            s.carrier,
+            s.tracking_number,
+            i.title AS item_title,
+            i.starting_price,
+            t.amount AS payment_amount,
+            t.txn_id,
+            buyer.user_id AS buyer_id,
+            buyer.username AS buyer_username,
+            buyer.email AS buyer_email,
+            seller.user_id AS seller_id,
+            seller.username AS seller_username,
+            seller.email AS seller_email
+        FROM disputes d
+        JOIN shipments s ON d.shipment_id = s.shipment_id
+        JOIN transactions t ON s.txn_id = t.txn_id
+        JOIN auctions a ON t.auction_id = a.auction_id
+        JOIN items i ON a.item_id = i.item_id
+        JOIN users buyer ON d.raised_by = buyer.user_id
+        JOIN users seller ON i.seller_id = seller.user_id
+        ORDER BY CASE WHEN d.status = 'open' THEN 0 ELSE 1 END, d.date DESC
+    `;
+    const result = await pool.query(sql);
+    return result.rows;
+};
+
+const resolveDispute = async (disputeId, adminId, decision) => {
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+        
+        // 1. Get dispute details
+        const disputeRes = await client.query(
+            `SELECT d.shipment_id, d.status, s.txn_id, t.amount, buyer.user_id AS buyer_id, seller.user_id AS seller_id
+             FROM disputes d
+             JOIN shipments s ON d.shipment_id = s.shipment_id
+             JOIN transactions t ON s.txn_id = t.txn_id
+             JOIN auctions a ON t.auction_id = a.auction_id
+             JOIN items i ON a.item_id = i.item_id
+             JOIN users buyer ON d.raised_by = buyer.user_id
+             JOIN users seller ON i.seller_id = seller.user_id
+             WHERE d.dispute_id = $1 FOR UPDATE`,
+            [disputeId]
+        );
+        
+        if (disputeRes.rows.length === 0) throw new Error("Dispute not found");
+        const dispute = disputeRes.rows[0];
+        
+        if (dispute.status !== 'open') throw new Error("Dispute is already resolved");
+        
+        const paymentAmount = Number(dispute.amount);
+        
+        if (decision === 'refund_buyer') {
+            // Update dispute
+            await client.query("UPDATE disputes SET status = 'resolved', resolved_by = $1 WHERE dispute_id = $2", [adminId, disputeId]);
+            // Update shipment
+            await client.query("UPDATE shipments SET status = 'dispute_refunded' WHERE shipment_id = $1", [dispute.shipment_id]);
+            // Refund wallet
+            const walletRes = await client.query("SELECT wallet_id FROM wallets WHERE user_id = $1 FOR UPDATE", [dispute.buyer_id]);
+            if (walletRes.rows.length > 0) {
+                const buyerWalletId = walletRes.rows[0].wallet_id;
+                await client.query("UPDATE wallets SET balance = balance + $1 WHERE wallet_id = $2", [paymentAmount, buyerWalletId]);
+                await client.query("INSERT INTO wallet_transactions (wallet_id, txn_id, type, amount) VALUES ($1, $2, 'dispute_refund', $3)", [buyerWalletId, dispute.txn_id, paymentAmount]);
+            }
+            // Notify buyer
+            await client.query("INSERT INTO notifications (user_id, type, message) VALUES ($1, 'dispute_resolved', $2)", [dispute.buyer_id, `Admin sided with you in the dispute. Escrow amount of ৳${paymentAmount.toLocaleString()} has been refunded to your wallet.`]);
+            // Update txn
+            await client.query("UPDATE transactions SET payment_status = 'refunded' WHERE txn_id = $1", [dispute.txn_id]);
+        } else if (decision === 'release_seller') {
+            // Update dispute
+            await client.query("UPDATE disputes SET status = 'resolved', resolved_by = $1 WHERE dispute_id = $2", [adminId, disputeId]);
+            // Update shipment
+            await client.query("UPDATE shipments SET status = 'delivered' WHERE shipment_id = $1", [dispute.shipment_id]);
+            // Call Escrow release proc
+            await client.query('CALL release_escrow($1, $2, $3)', [dispute.txn_id, dispute.seller_id, paymentAmount]);
+            // Notify seller
+            await client.query("INSERT INTO notifications (user_id, type, message) VALUES ($1, 'dispute_resolved', $2)", [dispute.seller_id, `Admin sided with you in the dispute. Escrow amount of ৳${paymentAmount.toLocaleString()} has been released to your wallet.`]);
+        } else {
+            throw new Error("Invalid decision type");
+        }
+        
+        await client.query("COMMIT");
+        return { success: true };
+    } catch (err) {
+        await client.query("ROLLBACK");
+        throw err;
+    } finally {
+        client.release();
+    }
+};
+
 module.exports = {
+    getAllDisputes,
+    resolveDispute,
     getTotalUsers,
     getActiveAuctions,
     getSalesStats,

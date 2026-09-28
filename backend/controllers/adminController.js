@@ -129,7 +129,41 @@ const deleteAdminCategory = async (req, res) => {
     }
 };
 
+
+const getAdminDisputes = async (req, res) => {
+    try {
+        const disputes = await adminStatsModel.getAllDisputes();
+        res.json(disputes);
+    } catch (err) {
+        console.error("Error fetching disputes:", err);
+        res.status(500).json({ error: "Failed to fetch disputes" });
+    }
+};
+
+const resolveAdminDispute = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { decision } = req.body; // 'refund_buyer' or 'release_seller'
+        const adminId = req.user.userId;
+
+        if (!['refund_buyer', 'release_seller'].includes(decision)) {
+            return res.status(400).json({ error: "Invalid decision" });
+        }
+
+        await adminStatsModel.resolveDispute(id, adminId, decision);
+        res.json({ message: "Dispute resolved successfully" });
+    } catch (err) {
+        if (err.message.includes("Dispute not found") || err.message.includes("already resolved")) {
+            return res.status(400).json({ error: err.message });
+        }
+        console.error("Error resolving dispute:", err);
+        res.status(500).json({ error: "Failed to resolve dispute" });
+    }
+};
+
 module.exports = {
+    getAdminDisputes,
+    resolveAdminDispute,
     getPlatformStats,
     getAdminUsers,
     toggleUserStatus,

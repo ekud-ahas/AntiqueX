@@ -7,7 +7,9 @@ const {
     toggleUserStatus,
     getAdminItems,
     toggleAuctionStatus,
-    deleteAdminCategory
+    deleteAdminCategory,
+    getAdminDisputes,
+    resolveAdminDispute
 } = require("../controllers/adminController");
 const { authenticateToken, requireRole } = require("../middleware/authMiddleware");
 
@@ -41,6 +43,10 @@ router.patch("/users/:id/status", ...adminOnly, toggleUserStatus);
 // 3. Item & Auction Moderation — admin & moderator can moderate
 router.get("/items", ...adminOrModerator, getAdminItems);
 router.patch("/auctions/:id/status", ...adminOrModerator, toggleAuctionStatus);
+
+// 5. Dispute Management — admin & moderator
+router.get("/disputes", ...adminOrModerator, getAdminDisputes);
+router.post("/disputes/:id/resolve", ...adminOrModerator, resolveAdminDispute);
 
 // 4. Category Management — admin only
 router.delete("/categories/:id", ...adminOnly, deleteAdminCategory);
