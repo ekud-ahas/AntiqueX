@@ -128,7 +128,7 @@ CREATE TABLE wallet_transactions (
     wallet_txn_id SERIAL PRIMARY KEY,
     wallet_id INT NOT NULL REFERENCES wallets(wallet_id) ON DELETE CASCADE,
     bid_id INT REFERENCES bids(bid_id) ON DELETE SET NULL,
-    txn_id INT UNIQUE REFERENCES transactions(txn_id) ON DELETE SET NULL,
+    txn_id INT REFERENCES transactions(txn_id) ON DELETE SET NULL,
     payment_method_id INT REFERENCES payment_methods(method_id) ON DELETE SET NULL,
     type VARCHAR(30) NOT NULL,
     amount NUMERIC(12, 2) NOT NULL CHECK (amount > 0),
