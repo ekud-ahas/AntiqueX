@@ -76,29 +76,52 @@ const getItemPriceInfo = async (id) => {
  * Create default auction for item if missing
  */
 const createDefaultAuction = async (itemId, minIncrement) => {
-    const query = `
-        INSERT INTO auctions
-        (item_id, start_time, end_time, min_increment, status)
-        VALUES ($1, NOW(), NOW() + INTERVAL '7 days', $2, 'active')
-        ON CONFLICT (item_id) DO NOTHING
-    `;
-    await pool.query(query, [itemId, minIncrement]);
-};
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+            const query = `
+                INSERT INTO auctions
+                (item_id, start_time, end_time, min_increment, status)
+                VALUES ($1, NOW(), NOW() + INTERVAL '7 days', $2, 'active')
+                ON CONFLICT (item_id) DO NOTHING
+            `;
+            await client.query(query, [itemId, minIncrement]);
+
+        await client.query("COMMIT");
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 /**
  * Create or activate auction for item (used during bid placement fallback)
  */
 const upsertActiveAuction = async (itemId, minIncrement) => {
-    const query = `
-        INSERT INTO auctions
-        (item_id, start_time, end_time, min_increment, status)
-        VALUES ($1, NOW(), NOW() + INTERVAL '7 days', $2, 'active')
-        ON CONFLICT (item_id) DO UPDATE SET status = 'active'
-        RETURNING auction_id, min_increment, status
-    `;
-    const result = await pool.query(query, [itemId, minIncrement]);
-    return result.rows[0];
-};
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+            const query = `
+                INSERT INTO auctions
+                (item_id, start_time, end_time, min_increment, status)
+                VALUES ($1, NOW(), NOW() + INTERVAL '7 days', $2, 'active')
+                ON CONFLICT (item_id) DO UPDATE SET status = 'active'
+                RETURNING auction_id, min_increment, status
+            `;
+            const result = await client.query(query, [itemId, minIncrement]);
+            await client.query("COMMIT");
+
+            return result.rows[0];
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 /**
  * Get all bids for an auction ordered by bid_amount DESC

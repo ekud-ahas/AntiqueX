@@ -254,148 +254,185 @@ const updateItem = async (itemId, {
     min_increment,
     auction_duration
 }) => {
-
-    // Check if auction already has bids placed
-    const checkAuction = await pool.query(
-        `SELECT a.status, COALESCE((SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id), 0) AS bid_count 
-         FROM auctions a 
-         WHERE a.item_id = $1`,
-        [itemId]
-    );
-    const auctionStatus = checkAuction.rows[0]?.status;
-    const hasBids = parseInt(checkAuction.rows[0]?.bid_count || "0", 10) > 0;
-    const isListed = auctionStatus === 'active' || auctionStatus === 'scheduled';
-
-    if (isListed) {
-        const currentItem = await pool.query("SELECT title, year_of_origin, condition FROM items WHERE item_id = $1", [itemId]);
-        const curr = currentItem.rows[0];
-        if (title !== undefined && title !== curr.title) throw new Error("Cannot alter title while auction is listed.");
-        if (year_of_origin !== undefined && Number(year_of_origin) !== Number(curr.year_of_origin)) throw new Error("Cannot alter year of origin while auction is listed.");
-        if (condition !== undefined && condition !== curr.condition) throw new Error("Cannot alter condition while auction is listed.");
-    }
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
 
 
-    if (hasBids && starting_price !== undefined) {
-        const currentItem = await pool.query("SELECT starting_price FROM items WHERE item_id = $1", [itemId]);
-        if (currentItem.rows.length > 0 && Number(currentItem.rows[0].starting_price) !== Number(starting_price)) {
-            const err = new Error("Cannot alter starting price: bids have already been placed on this auction.");
-            err.statusCode = 400;
-            throw err;
-        }
-    }
+            // Check if auction already has bids placed
+            const checkAuction = await client.query(
+                `SELECT a.status, COALESCE((SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id), 0) AS bid_count 
+                 FROM auctions a 
+                 WHERE a.item_id = $1`,
+                [itemId]
+            );
+            const auctionStatus = checkAuction.rows[0]?.status;
+            const hasBids = parseInt(checkAuction.rows[0]?.bid_count || "0", 10) > 0;
+            const isListed = auctionStatus === 'active' || auctionStatus === 'scheduled';
 
-    const query = `
-        UPDATE items
-        SET
-            category_id = COALESCE($1, category_id),
-            title = COALESCE($2, title),
-            description = COALESCE($3, description),
-            year_of_origin = COALESCE($4, year_of_origin),
-            condition = COALESCE($5, condition),
-            starting_price = COALESCE($6, starting_price)
-        WHERE item_id = $7
-        RETURNING *
-    `;
-    const result = await pool.query(query, [
-        category_id !== undefined ? category_id : null,
-        title !== undefined && title !== "" ? title : null,
-        description !== undefined ? description : null,
-        year_of_origin !== undefined && year_of_origin !== "" ? Number(year_of_origin) : null,
-        condition !== undefined ? condition : null,
-        starting_price !== undefined && starting_price !== "" ? Number(starting_price) : null,
-        itemId
-    ]);
+            if (isListed) {
+                const currentItem = await client.query("SELECT title, year_of_origin, condition FROM items WHERE item_id = $1", [itemId]);
+                const curr = currentItem.rows[0];
+                if (title !== undefined && title !== curr.title) throw new Error("Cannot alter title while auction is listed.");
+                if (year_of_origin !== undefined && Number(year_of_origin) !== Number(curr.year_of_origin)) throw new Error("Cannot alter year of origin while auction is listed.");
+                if (condition !== undefined && condition !== curr.condition) throw new Error("Cannot alter condition while auction is listed.");
+            }
 
-    // Optional auction settings update (only if no bids placed yet)
-    if (!hasBids && min_increment && Number(min_increment) > 0) {
-        await pool.query(
-            `
-            UPDATE auctions
-            SET min_increment = $1
-            WHERE item_id = $2
-            `,
-            [Number(min_increment), itemId]
-        );
-    }
 
-    if (!hasBids && auction_duration && Number(auction_duration) > 0) {
-        await pool.query(
-            `
-            UPDATE auctions
-            SET end_time = NOW() + ($1 || ' days')::INTERVAL,
-                status = 'active'
-            WHERE item_id = $2
-            `,
-            [String(auction_duration), itemId]
-        );
-    }
+            if (hasBids && starting_price !== undefined) {
+                const currentItem = await client.query("SELECT starting_price FROM items WHERE item_id = $1", [itemId]);
+                if (currentItem.rows.length > 0 && Number(currentItem.rows[0].starting_price) !== Number(starting_price)) {
+                    const err = new Error("Cannot alter starting price: bids have already been placed on this auction.");
+                    err.statusCode = 400;
+                    throw err;
+                }
+            }
 
-    return result.rows[0];
-};
+            const query = `
+                UPDATE items
+                SET
+                    category_id = COALESCE($1, category_id),
+                    title = COALESCE($2, title),
+                    description = COALESCE($3, description),
+                    year_of_origin = COALESCE($4, year_of_origin),
+                    condition = COALESCE($5, condition),
+                    starting_price = COALESCE($6, starting_price)
+                WHERE item_id = $7
+                RETURNING *
+            `;
+            const result = await client.query(query, [
+                category_id !== undefined ? category_id : null,
+                title !== undefined && title !== "" ? title : null,
+                description !== undefined ? description : null,
+                year_of_origin !== undefined && year_of_origin !== "" ? Number(year_of_origin) : null,
+                condition !== undefined ? condition : null,
+                starting_price !== undefined && starting_price !== "" ? Number(starting_price) : null,
+                itemId
+            ]);
+
+            // Optional auction settings update (only if no bids placed yet)
+            if (!hasBids && min_increment && Number(min_increment) > 0) {
+                await client.query(
+                    `
+                    UPDATE auctions
+                    SET min_increment = $1
+                    WHERE item_id = $2
+                    `,
+                    [Number(min_increment), itemId]
+                );
+            }
+
+            if (!hasBids && auction_duration && Number(auction_duration) > 0) {
+                await client.query(
+                    `
+                    UPDATE auctions
+                    SET end_time = NOW() + ($1 || ' days')::INTERVAL,
+                        status = 'active'
+                    WHERE item_id = $2
+                    `,
+                    [String(auction_duration), itemId]
+                );
+            }
+
+            await client.query("COMMIT");
+
+
+            return result.rows[0];
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 /**
  * Delete an item (prevent deletion if active bids or transactions exist)
  */
 const deleteItem = async (itemId) => {
-    // 1. Check if bids exist
-    const bidCheck = await pool.query(
-        `SELECT COUNT(*) AS bid_count 
-         FROM bids b 
-         JOIN auctions a ON b.auction_id = a.auction_id 
-         WHERE a.item_id = $1`,
-        [itemId]
-    );
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
 
-    if (parseInt(bidCheck.rows[0]?.bid_count || "0", 10) > 0) {
-        const err = new Error("Cannot delete item: active bids have already been placed on this auction.");
-        err.statusCode = 400;
-        throw err;
-    }
+            // 1. Check if bids exist
+            const bidCheck = await client.query(
+                `SELECT COUNT(*) AS bid_count 
+                 FROM bids b 
+                 JOIN auctions a ON b.auction_id = a.auction_id 
+                 WHERE a.item_id = $1`,
+                [itemId]
+            );
 
-    // 2. Check if transactions exist
-    const txCheck = await pool.query(
-        `SELECT COUNT(*) AS tx_count 
-         FROM transactions t 
-         JOIN auctions a ON t.auction_id = a.auction_id 
-         WHERE a.item_id = $1`,
-        [itemId]
-    );
+            if (parseInt(bidCheck.rows[0]?.bid_count || "0", 10) > 0) {
+                const err = new Error("Cannot delete item: active bids have already been placed on this auction.");
+                err.statusCode = 400;
+                throw err;
+            }
 
-    if (parseInt(txCheck.rows[0]?.tx_count || "0", 10) > 0) {
-        const err = new Error("Cannot delete item: this item is associated with completed or pending transactions.");
-        err.statusCode = 400;
-        throw err;
-    }
+            // 2. Check if transactions exist
+            const txCheck = await client.query(
+                `SELECT COUNT(*) AS tx_count 
+                 FROM transactions t 
+                 JOIN auctions a ON t.auction_id = a.auction_id 
+                 WHERE a.item_id = $1`,
+                [itemId]
+            );
 
-    const query = `
-        DELETE FROM items
-        WHERE item_id = $1
-        RETURNING *
-    `;
-    const result = await pool.query(query, [itemId]);
-    return result.rows[0];
-};
+            if (parseInt(txCheck.rows[0]?.tx_count || "0", 10) > 0) {
+                const err = new Error("Cannot delete item: this item is associated with completed or pending transactions.");
+                err.statusCode = 400;
+                throw err;
+            }
+
+            const query = `
+                DELETE FROM items
+                WHERE item_id = $1
+                RETURNING *
+            `;
+            const result = await client.query(query, [itemId]);
+            await client.query("COMMIT");
+
+            return result.rows[0];
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 /**
  * Add an image to an item
  */
 const addItemImage = async (itemId, imgUrl) => {
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
 
-    const checkAuction = await pool.query("SELECT status FROM auctions WHERE item_id = $1", [itemId]);
-    if (checkAuction.rows[0] && (checkAuction.rows[0].status === 'active' || checkAuction.rows[0].status === 'scheduled')) {
-        const err = new Error("Cannot modify images while auction is listed.");
-        err.statusCode = 400;
-        throw err;
-    }
 
-    const query = `
-        INSERT INTO item_images (item_id, img_url)
-        VALUES ($1, $2)
-        RETURNING *
-    `;
-    const result = await pool.query(query, [itemId, imgUrl]);
-    return result.rows[0];
-};
+            const checkAuction = await client.query("SELECT status FROM auctions WHERE item_id = $1", [itemId]);
+            if (checkAuction.rows[0] && (checkAuction.rows[0].status === 'active' || checkAuction.rows[0].status === 'scheduled')) {
+                const err = new Error("Cannot modify images while auction is listed.");
+                err.statusCode = 400;
+                throw err;
+            }
+
+            const query = `
+                INSERT INTO item_images (item_id, img_url)
+                VALUES ($1, $2)
+                RETURNING *
+            `;
+            const result = await client.query(query, [itemId, imgUrl]);
+            await client.query("COMMIT");
+
+            return result.rows[0];
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 /**
  * Get all images for an item
@@ -415,14 +452,26 @@ const getItemImages = async (itemId) => {
  * Delete an image by image ID and item ID
  */
 const deleteItemImage = async (itemId, imgId) => {
-    const query = `
-        DELETE FROM item_images
-        WHERE img_id = $1 AND item_id = $2
-        RETURNING *
-    `;
-    const result = await pool.query(query, [imgId, itemId]);
-    return result.rows[0] || null;
-};
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+            const query = `
+                DELETE FROM item_images
+                WHERE img_id = $1 AND item_id = $2
+                RETURNING *
+            `;
+            const result = await client.query(query, [imgId, itemId]);
+            await client.query("COMMIT");
+
+            return result.rows[0] || null;
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 module.exports = {
     getAllItems,

@@ -4,37 +4,50 @@ const pool = require("../config/db");
  * Find or create a user's wallet
  */
 const getOrCreateWallet = async (userId) => {
-    let walletRes = await pool.query(
-        `
-        SELECT wallet_id, user_id, balance
-        FROM wallets
-        WHERE user_id = $1
-        `,
-        [userId]
-    );
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
 
-    if (walletRes.rows.length === 0) {
-        walletRes = await pool.query(
-            `
-            INSERT INTO wallets (user_id, balance)
-            VALUES ($1, 0.00)
-            ON CONFLICT (user_id) DO NOTHING
-            RETURNING wallet_id, user_id, balance
-            `,
-            [userId]
-        );
-
-        // Re-fetch if conflict occurred
-        if (walletRes.rows.length === 0) {
-            walletRes = await pool.query(
-                `SELECT wallet_id, user_id, balance FROM wallets WHERE user_id = $1`,
+            let walletRes = await client.query(
+                `
+                SELECT wallet_id, user_id, balance
+                FROM wallets
+                WHERE user_id = $1
+                `,
                 [userId]
             );
-        }
-    }
 
-    return walletRes.rows[0];
-};
+            if (walletRes.rows.length === 0) {
+                walletRes = await client.query(
+                    `
+                    INSERT INTO wallets (user_id, balance)
+                    VALUES ($1, 0.00)
+                    ON CONFLICT (user_id) DO NOTHING
+                    RETURNING wallet_id, user_id, balance
+                    `,
+                    [userId]
+                );
+
+                // Re-fetch if conflict occurred
+                if (walletRes.rows.length === 0) {
+                    walletRes = await client.query(
+                        `SELECT wallet_id, user_id, balance FROM wallets WHERE user_id = $1`,
+                        [userId]
+                    );
+                }
+            }
+
+            await client.query("COMMIT");
+
+
+            return walletRes.rows[0];
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 /**
  * Get transaction history for a wallet

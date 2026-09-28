@@ -19,26 +19,40 @@ const getUserNotifications = async (userId) => {
  * Mark a single notification or all notifications as read
  */
 const markAsRead = async (userId, notificationId = null) => {
-    if (notificationId) {
-        const query = `
-            UPDATE notifications
-            SET is_read = TRUE
-            WHERE notification_id = $1 AND user_id = $2
-            RETURNING *
-        `;
-        const result = await pool.query(query, [notificationId, userId]);
-        return result.rows[0] || null;
-    } else {
-        const query = `
-            UPDATE notifications
-            SET is_read = TRUE
-            WHERE user_id = $1
-            RETURNING *
-        `;
-        const result = await pool.query(query, [userId]);
-        return result.rows;
-    }
-};
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+            if (notificationId) {
+                const query = `
+                    UPDATE notifications
+                    SET is_read = TRUE
+                    WHERE notification_id = $1 AND user_id = $2
+                    RETURNING *
+                `;
+                const result = await client.query(query, [notificationId, userId]);
+                await client.query("COMMIT");
+
+                return result.rows[0] || null;
+            } else {
+                const query = `
+                    UPDATE notifications
+                    SET is_read = TRUE
+                    WHERE user_id = $1
+                    RETURNING *
+                `;
+                const result = await client.query(query, [userId]);
+                await client.query("COMMIT");
+
+                return result.rows;
+            }
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 /**
  * Create a new notification

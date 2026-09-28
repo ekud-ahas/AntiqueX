@@ -80,15 +80,27 @@ const getAllUsersDetailed = async () => {
 
 // Raw SQL: toggle user status between 'active' and 'suspended'
 const updateUserStatus = async (userId, status) => {
-    const sql = `
-        UPDATE users
-        SET status = $1
-        WHERE user_id = $2
-        RETURNING user_id, username, full_name, email, status
-    `;
-    const result = await pool.query(sql, [status, userId]);
-    return result.rows[0] || null;
-};
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+            const sql = `
+                UPDATE users
+                SET status = $1
+                WHERE user_id = $2
+                RETURNING user_id, username, full_name, email, status
+            `;
+            const result = await client.query(sql, [status, userId]);
+            await client.query("COMMIT");
+
+            return result.rows[0] || null;
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 // Raw SQL: get all items across platform for moderation
 const getAllItemsDetailed = async () => {
@@ -203,29 +215,53 @@ const cancelAuctionAndRefundEscrow = async (auctionId) => {
 // A cancelled auction can only be restored when it has no bid history. Otherwise
 // the prior high bid has already been refunded and must not become active again.
 const reactivateAuctionWithoutBids = async (auctionId) => {
-    const result = await pool.query(
-        `UPDATE auctions a
-         SET status = 'active'
-         WHERE a.auction_id = $1
-           AND a.status = 'cancelled'
-           AND NOT EXISTS (SELECT 1 FROM bids b WHERE b.auction_id = a.auction_id)
-         RETURNING a.auction_id, a.status`,
-        [auctionId]
-    );
-    return result.rows[0] || null;
-};
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+            const result = await client.query(
+                `UPDATE auctions a
+                 SET status = 'active'
+                 WHERE a.auction_id = $1
+                   AND a.status = 'cancelled'
+                   AND NOT EXISTS (SELECT 1 FROM bids b WHERE b.auction_id = a.auction_id)
+                 RETURNING a.auction_id, a.status`,
+                [auctionId]
+            );
+            await client.query("COMMIT");
+
+            return result.rows[0] || null;
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 // Raw SQL: delete category (if no items reference it)
 const deleteCategory = async (categoryId) => {
-    const checkSql = `SELECT COUNT(*) AS count FROM items WHERE category_id = $1`;
-    const checkRes = await pool.query(checkSql, [categoryId]);
-    if (parseInt(checkRes.rows[0].count, 10) > 0) {
-        throw new Error("Cannot delete category because it contains active items.");
-    }
-    const sql = `DELETE FROM categories WHERE category_id = $1 RETURNING category_id, category_name`;
-    const result = await pool.query(sql, [categoryId]);
-    return result.rows[0] || null;
-};
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+            const checkSql = `SELECT COUNT(*) AS count FROM items WHERE category_id = $1`;
+            const checkRes = await client.query(checkSql, [categoryId]);
+            if (parseInt(checkRes.rows[0].count, 10) > 0) {
+                throw new Error("Cannot delete category because it contains active items.");
+            }
+            const sql = `DELETE FROM categories WHERE category_id = $1 RETURNING category_id, category_name`;
+            const result = await client.query(sql, [categoryId]);
+            await client.query("COMMIT");
+
+            return result.rows[0] || null;
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 
 const getAllDisputes = async () => {

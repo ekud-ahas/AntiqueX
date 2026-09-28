@@ -30,14 +30,26 @@ const findByEmail = async (email) => {
  * Create a new user with hashed password
  */
 const createUser = async ({ username, full_name, email, passwordHash }) => {
-    const query = `
-        INSERT INTO users (username, full_name, email, password)
-        VALUES ($1, $2, $3, $4)
-        RETURNING user_id, username, full_name, email
-    `;
-    const result = await pool.query(query, [username, full_name, email, passwordHash]);
-    return result.rows[0];
-};
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+            const query = `
+                INSERT INTO users (username, full_name, email, password)
+                VALUES ($1, $2, $3, $4)
+                RETURNING user_id, username, full_name, email
+            `;
+            const result = await client.query(query, [username, full_name, email, passwordHash]);
+            await client.query("COMMIT");
+
+            return result.rows[0];
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 /**
  * Find user by ID without sensitive fields

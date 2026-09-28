@@ -77,26 +77,46 @@ const findWatchlistEntry = async (userId, itemId) => {
  * Add item to watchlist
  */
 const addToWatchlist = async (userId, itemId) => {
-    const query = `
-        INSERT INTO watchlist (user_id, item_id)
-        VALUES ($1, $2)
-        RETURNING *
-    `;
-    const result = await pool.query(query, [userId, itemId]);
-    return result.rows[0];
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+        const query = `
+            INSERT INTO watchlist (user_id, item_id)
+            VALUES ($1, $2)
+            RETURNING *
+        `;
+        const result = await client.query(query, [userId, itemId]);
+        await client.query("COMMIT");
+        return result.rows[0];
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 /**
  * Remove item from watchlist
  */
 const removeFromWatchlist = async (userId, itemId) => {
-    const query = `
-        DELETE FROM watchlist
-        WHERE user_id = $1 AND item_id = $2
-        RETURNING *
-    `;
-    const result = await pool.query(query, [userId, itemId]);
-    return result.rows[0] || null;
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+        const query = `
+            DELETE FROM watchlist
+            WHERE user_id = $1 AND item_id = $2
+            RETURNING *
+        `;
+        const result = await client.query(query, [userId, itemId]);
+        await client.query("COMMIT");
+        return result.rows[0] || null;
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }
 };
 
 module.exports = {

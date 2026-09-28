@@ -64,34 +64,58 @@ const getItemsByCategory = async (categoryId) => {
  * Create a new category (Admin only)
  */
 const createCategory = async (adminId, categoryName, description) => {
-    const query = `
-        INSERT INTO categories (admin_id, category_name, description)
-        VALUES ($1, $2, $3)
-        RETURNING *
-    `;
-    const result = await pool.query(query, [adminId, categoryName, description]);
-    return result.rows[0];
-};
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+            const query = `
+                INSERT INTO categories (admin_id, category_name, description)
+                VALUES ($1, $2, $3)
+                RETURNING *
+            `;
+            const result = await client.query(query, [adminId, categoryName, description]);
+            await client.query("COMMIT");
+
+            return result.rows[0];
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 /**
  * Delete a category by ID (Admin only)
  */
 const deleteCategoryById = async (categoryId) => {
-    const checkQuery = `SELECT COUNT(*) AS count FROM items WHERE category_id = $1`;
-    const checkRes = await pool.query(checkQuery, [categoryId]);
-    if (parseInt(checkRes.rows[0].count, 10) > 0) {
-        const err = new Error("Cannot delete category: active items belong to this category. Delete or reassign items first.");
-        err.statusCode = 400;
-        throw err;
-    }
-    const deleteQuery = `
-        DELETE FROM categories
-        WHERE category_id = $1
-        RETURNING category_id, category_name
-    `;
-    const result = await pool.query(deleteQuery, [categoryId]);
-    return result.rows[0] || null;
-};
+    const client = await pool.connect();
+    try {
+        await client.query("BEGIN");
+
+            const checkQuery = `SELECT COUNT(*) AS count FROM items WHERE category_id = $1`;
+            const checkRes = await client.query(checkQuery, [categoryId]);
+            if (parseInt(checkRes.rows[0].count, 10) > 0) {
+                const err = new Error("Cannot delete category: active items belong to this category. Delete or reassign items first.");
+                err.statusCode = 400;
+                throw err;
+            }
+            const deleteQuery = `
+                DELETE FROM categories
+                WHERE category_id = $1
+                RETURNING category_id, category_name
+            `;
+            const result = await client.query(deleteQuery, [categoryId]);
+            await client.query("COMMIT");
+
+            return result.rows[0] || null;
+
+    } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+    } finally {
+        client.release();
+    }};
 
 module.exports = {
     getAllCategories,

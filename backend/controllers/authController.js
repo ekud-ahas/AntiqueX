@@ -204,25 +204,27 @@ const login = async (req, res) => {
 
 // Logout endpoint with server-side token invalidation 
 const logout = async (req, res) => {
+    const client = await pool.connect();
     try {
+        await client.query("BEGIN");
         const token = req.token;
         const expiresAt = new Date(req.user.exp * 1000);
 
-        await pool.query(
+        await client.query(
             `INSERT INTO revoked_tokens (token, expires_at)
              VALUES ($1, $2)
              ON CONFLICT (token) DO NOTHING`,
             [token, expiresAt]
         );
-
-        res.json({
-            message: "Logged out successfully and token invalidated"
-        });
+        
+        await client.query("COMMIT");
+        res.json({ message: "Logged out successfully and token invalidated" });
     } catch (error) {
+        await client.query("ROLLBACK");
         console.error("LOGOUT ERROR:", error);
-        res.status(500).json({
-            error: "Failed to logout"
-        });
+        res.status(500).json({ error: "Failed to logout" });
+    } finally {
+        client.release();
     }
 };
 
