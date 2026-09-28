@@ -71,6 +71,24 @@ function ItemDetails() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [id]);
 
+    // Fetch addresses for the bid modal dropdown
+    useEffect(() => {
+        if (currentUser) {
+            authFetch("/api/profile/addresses")
+                .then(res => res.json())
+                .then(data => {
+                    if (Array.isArray(data)) {
+                        setAddresses(data);
+                        if (data.length > 0) {
+                            setSelectedAddressId(data[0].address_id);
+                        }
+                    }
+                })
+                .catch(err => console.error("Failed to load addresses", err));
+        }
+    }, [currentUser]);
+
+
     // Live countdown timer
     useEffect(() => {
         if (!auction?.end_time) return;
@@ -141,7 +159,7 @@ function ItemDetails() {
         }
     };
 
-    const executeBid = async () => {
+    const executeBid = async (explicitAddressId = null) => {
         setSubmittingBid(true);
         try {
             const response = await authFetch(
@@ -150,7 +168,7 @@ function ItemDetails() {
                     method: "POST",
                     body: JSON.stringify({
                         bid_amount: Number(bidAmount),
-                        addressId: selectedAddressId
+                        addressId: explicitAddressId || selectedAddressId
                     }),
                 }
             );
@@ -223,14 +241,14 @@ function ItemDetails() {
             // re-fetch addresses so the new one is selected
             const addrRes = await authFetch("/api/profile/addresses");
             const addrData = await addrRes.json();
+            let newSelectedId = null;
             if (Array.isArray(addrData) && addrData.length > 0) {
                 setAddresses(addrData);
                 setSelectedAddressId(addrData[0].address_id);
+                newSelectedId = addrData[0].address_id;
             }
-            // Cannot automatically execute bid here easily because selectedAddressId might not be updated in closure,
-            // but we can pass it directly to a modified executeBid or let the user click submit again.
-            // Let's just let the user click Place Bid again with their new address loaded.
-            setMessage("Address saved! Please click Place Bid again.");
+            // Auto-submit the bid using the new address id
+            await executeBid(newSelectedId);
         } catch (err) {
             alert(err.message || "Failed to save address");
         }
@@ -548,11 +566,7 @@ function ItemDetails() {
                                         ))}
                                     </select>
                                 )}
-                                {currentUser && addresses.length === 0 && (
-                                    <p style={{ color: '#d9534f', fontSize: '0.9rem', marginBottom: '10px' }}>
-                                        No address found. You will be prompted to add one.
-                                    </p>
-                                )}
+
                                 <input
                                     className="bid-input"
                                     type="number"
