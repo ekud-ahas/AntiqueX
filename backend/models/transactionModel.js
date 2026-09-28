@@ -143,7 +143,7 @@ const closeAuctionAndRecordWinner = async (auctionId, customClient = null, custo
                 `,
                 [
                     data.seller_id,
-                    `Your antique "${data.title}" was sold for BDT ${winningAmount.toLocaleString()} to @${data.buyer_username}. BDT ${winningAmount.toLocaleString()} has been credited to your wallet.`
+                    `Your antique "${data.title}" was sold for BDT ${winningAmount.toLocaleString()} to @${data.buyer_username}. The funds are held in escrow and will be credited to your wallet once the buyer confirms delivery.`
                 ]
             );
         } else if (data) {
@@ -453,7 +453,7 @@ const processPayment = async ({
             `,
             [
                 txn.seller_id,
-                `Payment of BDT ${paymentAmount.toLocaleString()} for "${txn.item_title}" has been received and credited to your wallet. Please dispatch the shipment.`
+                `Payment of BDT ${paymentAmount.toLocaleString()} for "${txn.item_title}" has been received and is held in escrow. Please dispatch the shipment — the funds will be released to your wallet once the buyer confirms delivery.`
             ]
         );
 
