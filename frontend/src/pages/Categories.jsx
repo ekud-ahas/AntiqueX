@@ -5,7 +5,7 @@ import "../App.css";
 import "./Categories.css";
 
 const CATEGORY_ICONS = {
-    "Antique Furniture": "🪑",
+    "Antique Furniture": "",
     "Fine Art & Paintings": "",
     "Vintage Jewelry": "",
     "Rare Coins & Currency": "",

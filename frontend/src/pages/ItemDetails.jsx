@@ -373,11 +373,7 @@ function ItemDetails() {
                                         <p>
                                             Winning Bidder: <strong>{auction.winner_username}</strong> with bid of <strong>৳{currentHighest.toLocaleString()}</strong>
                                         </p>
-                                        {auction.winner_bid_id && (
-                                            <span className="winner-bid-badge">
-                                                Winning Bid ID: #{auction.winner_bid_id}
-                                            </span>
-                                        )}
+                                        
                                         {isWinner && (
                                             <div className="winner-congrats">
                                                  Congratulations! You won this antique auction.
@@ -461,14 +457,6 @@ function ItemDetails() {
                             <div className="spec-row">
                                 <span className="spec-label">Auction Ends:</span>
                                 <span className="spec-val">{formatDateTime(auction.end_time)}</span>
-                            </div>
-                            <div className="spec-row">
-                                <span className="spec-label">Item ID:</span>
-                                <span className="spec-val">#{auction.item_id}</span>
-                            </div>
-                            <div className="spec-row">
-                                <span className="spec-label">Auction ID:</span>
-                                <span className="spec-val">#{auction.auction_id}</span>
                             </div>
                         </div>
 
