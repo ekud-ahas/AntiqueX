@@ -278,8 +278,8 @@ function SellItem() {
                                         ? `Auto: ৳${Math.max(100, Math.round((Number(form.starting_price) * 0.05) / 100) * 100).toLocaleString()}`
                                         : "Auto-calculated (5% of price)"
                                     }
-                                    min="100"
-                                    step="100"
+                                    min="1"
+                                    step="1"
                                 />
                                 <span className="field-hint">
                                     Leave blank to auto-set at 5% of starting price (min ৳100)

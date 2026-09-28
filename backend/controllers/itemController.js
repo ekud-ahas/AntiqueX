@@ -60,6 +60,13 @@ const createItem = async (req, res) => {
                 error: "Required fields are missing (category, title, starting_price)"
             });
         }
+        
+        // Additional validation for increment
+        if (min_increment !== undefined && min_increment !== null && min_increment !== "") {
+            if (Number(min_increment) < 1) {
+                return res.status(400).json({ error: "Minimum bid increment must be at least 1" });
+            }
+        }
 
         let parsedImageUrls = [];
         if (image_urls) {

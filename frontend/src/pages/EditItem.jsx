@@ -367,8 +367,8 @@ function EditItem() {
                   value={form.min_increment}
                   onChange={handleChange}
                   placeholder="e.g. 500"
-                  min="100"
-                  step="100"
+                  min="1"
+                  step="1"
                 />
                 <span className="field-hint">
                   Minimum amount each new bid must increase.
