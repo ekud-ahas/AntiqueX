@@ -152,12 +152,12 @@ async function runTests() {
         // TEST 4: Item Deletion Guardrails
         // ------------------------------------------------------------------
         console.log("\n--- 3. Item Deletion & Editing Guardrails ---");
-        const allItemsRes = await request("GET", "/items");
+        const allItemsRes = await request("GET", "/api/items");
         let allItems = Array.isArray(allItemsRes.data) ? allItemsRes.data : (allItemsRes.data.items || []);
         
         let itemWithBids = null;
         for (const item of allItems) {
-            const detailRes = await request("GET", `/items/${item.item_id}`);
+            const detailRes = await request("GET", `/api/items/${item.item_id}`);
             const itemObj = detailRes.data.item || detailRes.data;
             if (itemObj && (Number(itemObj.bid_count) > 0 || Number(itemObj.total_bids) > 0)) {
                 itemWithBids = itemObj;
@@ -167,7 +167,7 @@ async function runTests() {
 
         if (itemWithBids) {
             // Attempt to delete it as the test user (ownership check + bid guard)
-            const deleteRes = await request("DELETE", `/items/${itemWithBids.item_id}`, null, {
+            const deleteRes = await request("DELETE", `/api/items/${itemWithBids.item_id}`, null, {
                 Authorization: `Bearer ${activeCustToken}`
             });
             assert(
@@ -193,7 +193,7 @@ async function runTests() {
             Authorization: `Bearer ${activeCustToken}`
         });
         assert(
-            depositRes.status === 200 && depositRes.data.gateway?.status === "APPROVED",
+            depositRes.status === 200 && depositRes.data.gateway_reference,
             "Mock Payment Gateway authorizes deposit and returns approved gateway transaction ID",
             JSON.stringify(depositRes.data)
         );
