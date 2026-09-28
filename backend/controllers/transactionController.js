@@ -111,6 +111,5 @@ module.exports = {
     closeAuctionAndRecordWinner,
     closeAuctionEndpoint,
     getTransactionById,
-    getUserTransactions,
-    payTransaction
+    getUserTransactions
 };

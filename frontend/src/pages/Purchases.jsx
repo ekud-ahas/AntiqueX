@@ -19,15 +19,6 @@ function Purchases() {
 
     const [activeTab, setActiveTab] = useState(user?.role === "Seller" ? "seller" : "buyer");
 
-    // Checkout State
-    const [checkoutTxn, setCheckoutTxn] = useState(null);
-    const [paymentType, setPaymentType] = useState("wallet");
-    const [selectedMethodId, setSelectedMethodId] = useState("");
-    const [deliveryAddress, setDeliveryAddress] = useState("");
-    const [paying, setPaying] = useState(false);
-    const [payMessage, setPayMessage] = useState("");
-    const [isError, setIsError] = useState(false);
-
     // Shipping State (for Sellers)
     const [selectedShipmentId, setSelectedShipmentId] = useState(null);
     const [carrier, setCarrier] = useState("Pathao");
@@ -65,57 +56,6 @@ function Purchases() {
         fetchData();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
-
-    // --- CHECKOUT LOGIC ---
-    const openCheckout = (txn) => {
-        setCheckoutTxn(txn);
-        setPayMessage("");
-        setIsError(false);
-        setPaymentType("wallet");
-        setDeliveryAddress("");
-    };
-
-    const closeCheckout = () => {
-        setCheckoutTxn(null);
-        setPayMessage("");
-    };
-
-    const handlePayTransaction = async (e) => {
-        e.preventDefault();
-        setPaying(true);
-        setPayMessage("");
-        setIsError(false);
-
-        try {
-            const payload = {
-                txnId: checkoutTxn.txn_id,
-                paymentMethodType: paymentType,
-                paymentMethodId: paymentType === "method" ? selectedMethodId : null,
-                deliveryAddressNote: deliveryAddress
-            };
-
-            const res = await authFetch("/api/transactions/pay", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload)
-            });
-
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Payment failed");
-
-            setPayMessage("Payment successful! Your order will be shipped soon.");
-            setIsError(false);
-            await fetchData();
-            setTimeout(() => {
-                closeCheckout();
-            }, 2000);
-        } catch (err) {
-            setPayMessage(err.message);
-            setIsError(true);
-        } finally {
-            setPaying(false);
-        }
-    };
 
     // --- DELIVERY & ESCROW LOGIC ---
     const handleShipItem = async (e, shipmentId) => {
@@ -268,15 +208,6 @@ function Purchases() {
                                             )}
                                         </div>
 
-                                        {/* UNPAID LOGIC (Checkout) */}
-                                        {activeTab === "buyer" && isUnpaid && (
-                                            <div style={{ marginTop: "10px", width: "100%", textAlign: "right" }}>
-                                                <button className="btn btn-primary" onClick={() => openCheckout(txn)}>
-                                                    Pay Now (Checkout)
-                                                </button>
-                                            </div>
-                                        )}
-
                                         {/* PAID LOGIC (Shipping & Delivery) */}
                                         {!isUnpaid && txn.shipment_id && (
                                             <div style={{ width: "100%" }}>
@@ -382,115 +313,7 @@ function Purchases() {
                     )}
                 </div>
 
-                {/* Checkout Modal */}
-                {checkoutTxn && (
-                    <div className="wallet-modal-overlay" onClick={closeCheckout}>
-                        <div className="wallet-modal-content" style={{ maxWidth: "500px", padding: "30px", textAlign: "left" }} onClick={(e) => e.stopPropagation()}>
-                            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
-                                <h2 style={{ margin: 0 }}> Checkout & Pay</h2>
-                                <button style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer" }} onClick={closeCheckout}></button>
                             </div>
-
-                            <div style={{ background: "#f8fafc", padding: "15px", borderRadius: "8px", marginBottom: "20px" }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                                    <span>Item:</span>
-                                    <strong>{checkoutTxn.item_title}</strong>
-                                </div>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "8px" }}>
-                                    <span>Seller:</span>
-                                    <span>@{checkoutTxn.seller_username}</span>
-                                </div>
-                                <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #e2e8f0", paddingTop: "8px", marginTop: "8px" }}>
-                                    <span>Total Due:</span>
-                                    <strong style={{ color: "#27ae60", fontSize: "18px" }}>৳{Number(checkoutTxn.amount).toLocaleString()}</strong>
-                                </div>
-                            </div>
-
-                            <form onSubmit={handlePayTransaction} className="wallet-form-container" style={{ margin: 0, maxWidth: "100%" }}>
-                                <div className="form-group">
-                                    <label>Choose Payment Method *</label>
-                                    <div style={{ display: "flex", gap: "10px" }}>
-                                        <div
-                                            style={{ flex: 1, padding: "10px", border: `2px solid ${paymentType === 'wallet' ? 'var(--primary)' : '#e2e8f0'}`, borderRadius: "8px", cursor: "pointer" }}
-                                            onClick={() => setPaymentType("wallet")}
-                                        >
-                                            <strong> Wallet</strong>
-                                            <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px" }}>Available: ৳{walletBalance.toLocaleString()}</div>
-                                        </div>
-
-                                        <div
-                                            style={{ flex: 1, padding: "10px", border: `2px solid ${paymentType === 'method' ? 'var(--primary)' : '#e2e8f0'}`, borderRadius: "8px", cursor: "pointer" }}
-                                            onClick={() => setPaymentType("method")}
-                                        >
-                                            <strong> Saved Method</strong>
-                                            <div style={{ fontSize: "12px", color: "var(--muted)", marginTop: "4px" }}>Bkash, Card</div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {paymentType === "wallet" && walletBalance < Number(checkoutTxn.amount) && (
-                                    <div className="wallet-alert alert-error" style={{ padding: "10px", fontSize: "13px" }}>
-                                         Insufficient balance (Short by ৳{(Number(checkoutTxn.amount) - walletBalance).toLocaleString()}). 
-                                        <Link to="/wallet" style={{ marginLeft: "10px", fontWeight: "bold", textDecoration: "underline" }}>Deposit Funds</Link>
-                                    </div>
-                                )}
-
-                                {paymentType === "method" && (
-                                    <div className="form-group">
-                                        <label htmlFor="methodSelect">Select Saved Method *</label>
-                                        {paymentMethods.length > 0 ? (
-                                            <select
-                                                id="methodSelect"
-                                                className="wallet-select"
-                                                value={selectedMethodId}
-                                                onChange={(e) => setSelectedMethodId(e.target.value)}
-                                                required
-                                            >
-                                                {paymentMethods.map((m) => (
-                                                    <option key={m.method_id} value={m.method_id}>
-                                                        {m.method_name} ({m.provider})
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <div style={{ fontSize: "13px", color: "var(--muted)" }}>
-                                                No saved payment methods. <Link to="/wallet">Add one in Wallet</Link>.
-                                            </div>
-                                        )}
-                                    </div>
-                                )}
-
-                                <div className="form-group">
-                                    <label htmlFor="delivAddr">Delivery Address / Notes (Optional)</label>
-                                    <textarea
-                                        id="delivAddr"
-                                        className="wallet-input"
-                                        rows="2"
-                                        placeholder="House #, Street, City…"
-                                        value={deliveryAddress}
-                                        onChange={(e) => setDeliveryAddress(e.target.value)}
-                                    />
-                                </div>
-
-                                {payMessage && (
-                                    <div className={`wallet-alert ${isError ? "alert-error" : "alert-success"}`} style={{ padding: "10px", marginBottom: "15px" }}>
-                                        {payMessage}
-                                    </div>
-                                )}
-
-                                <button
-                                    type="submit"
-                                    className="btn btn-primary wallet-submit-btn"
-                                    style={{ margin: 0 }}
-                                    disabled={paying || (paymentType === "wallet" && walletBalance < Number(checkoutTxn.amount))}
-                                >
-                                    {paying ? "Processing Payment…" : `Confirm & Pay ৳${Number(checkoutTxn.amount).toLocaleString()}`}
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-                )}
-            </div>
         </div>
     );
 }
