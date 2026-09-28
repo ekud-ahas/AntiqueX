@@ -10,12 +10,12 @@ const closeAuctionAndRecordWinner = async (auctionId, customClient = null, custo
     try {
         if (shouldManageTransaction) await client.query("BEGIN");
 
-        // 1. Mark auction as ended
+        // 1. Mark auction as ended (Idempotent check)
         const auctionRes = await client.query(
             `
             UPDATE auctions
             SET status = 'ended'
-            WHERE auction_id = $1
+            WHERE auction_id = $1 AND status = 'active'
             RETURNING auction_id, item_id, status
             `,
             [auctionId]
