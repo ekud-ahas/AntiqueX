@@ -82,6 +82,10 @@ const createItem = async (req, res) => {
 
         const uploadedFileUrl = req.file ? `/uploads/${req.file.filename}` : null;
 
+        if (!uploadedFileUrl && parsedImageUrls.length === 0) {
+            return res.status(400).json({ error: "Item photograph is mandatory (either upload a file or provide an image URL)" });
+        }
+
         const newItem = await itemModel.createItemWithAuction({
             seller_id,
             category_id,

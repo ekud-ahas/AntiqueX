@@ -53,6 +53,12 @@ function SellItem() {
             return;
         }
 
+        if (!form.image_url.trim() && !image) {
+            setIsError(true);
+            setMessage("Please provide at least one item photograph (either a Web URL or Local File).");
+            return;
+        }
+
         setLoading(true);
         setMessage("");
         setIsError(false);
