@@ -17,6 +17,7 @@ function AdminDashboard() {
     const [stats, setStats] = useState(null);
     const [usersList, setUsersList] = useState([]);
     const [itemsList, setItemsList] = useState([]);
+    const [disputesList, setDisputesList] = useState([]);
 
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
@@ -33,23 +34,26 @@ function AdminDashboard() {
             // Stats and items are available to both roles
             const requests = [
                 fetch("/api/admin/stats", { headers: requestHeaders }),
-                fetch("/api/admin/items",  { headers: requestHeaders })
+                fetch("/api/admin/items",  { headers: requestHeaders }),
+                fetch("/api/admin/disputes", { headers: requestHeaders })
             ];
             // Users endpoint is admin-only — don't fetch for moderators
             if (isFullAdmin) {
                 requests.push(fetch("/api/admin/users", { headers: requestHeaders }));
             }
 
-            const [statsRes, itemsRes, usersRes] = await Promise.all(requests);
+            const [statsRes, itemsRes, disputesRes, usersRes] = await Promise.all(requests);
 
             if (!statsRes.ok) throw new Error("Failed to load platform stats");
 
             const statsData = await statsRes.json();
             const itemsData = itemsRes.ok ? await itemsRes.json() : [];
+            const disputesData = disputesRes.ok ? await disputesRes.json() : [];
             const usersData = (isFullAdmin && usersRes?.ok) ? await usersRes.json() : [];
 
             setStats(statsData);
             setItemsList(itemsData);
+            setDisputesList(disputesData);
             setUsersList(usersData);
             setLoading(false);
         } catch (err) {
@@ -62,6 +66,32 @@ function AdminDashboard() {
         if (!isAdmin) return;
         void fetchAllAdminData();
     }, [fetchAllAdminData, isAdmin]);
+
+    
+    const handleResolveDispute = async (disputeId, decision) => {
+        const actionStr = decision === 'refund_buyer' ? "side with the BUYER (issue full refund)" : "side with the SELLER (release funds)";
+        if (!window.confirm(`Are you sure you want to ${actionStr}?`)) return;
+
+        setActionLoading(true);
+        setActionMsg("");
+        try {
+            const res = await fetch(`/api/admin/disputes/${disputeId}/resolve`, {
+                method: "POST",
+                headers: authHeader,
+                body: JSON.stringify({ decision })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error);
+
+            setActionMsg("Dispute successfully resolved.");
+            void fetchAllAdminData();
+        } catch (err) {
+            alert(err.message);
+        } finally {
+            setActionLoading(false);
+        }
+    };
+
 
     // User status toggle handler (admin only)
     const handleToggleUserStatus = async (targetUser) => {
@@ -210,6 +240,12 @@ function AdminDashboard() {
                     onClick={() => setActiveTab("items")}
                 >
                      Item Moderation ({itemsList.length})
+                </button>
+                <button
+                    className={`tab-btn ${activeTab === "disputes" ? "active" : ""}`}
+                    onClick={() => setActiveTab("disputes")}
+                >
+                     Disputes (${disputesList.length})
                 </button>
             </div>
 
@@ -400,6 +436,75 @@ function AdminDashboard() {
                     </table>
                 </div>
             )}
+
+            {/* ══════════════ TAB 4: DISPUTES ══════════════ */}
+            {activeTab === "disputes" && (
+                <div>
+                    <h2 style={{ color: "var(--text-dark)", marginBottom: "15px" }}>Dispute Resolution Desk</h2>
+                    {disputesList.length === 0 ? (
+                        <p style={{ color: "var(--muted)" }}>No disputes available.</p>
+                    ) : (
+                        <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                            {disputesList.map(d => (
+                                <div key={d.dispute_id} style={{ border: "1px solid var(--border)", borderRadius: "8px", padding: "15px", background: "white" }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "10px" }}>
+                                        <h3 style={{ margin: 0, color: "var(--primary)" }}>Dispute #{d.dispute_id}</h3>
+                                        <span style={{ 
+                                            background: d.dispute_status === 'open' ? '#f39c12' : '#27ae60', 
+                                            color: 'white', padding: "3px 8px", borderRadius: "12px", fontSize: "12px", fontWeight: "bold"
+                                        }}>
+                                            {d.dispute_status.toUpperCase()}
+                                        </span>
+                                    </div>
+
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px", fontSize: "14px" }}>
+                                        <div style={{ background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                                            <strong>Item:</strong> {d.item_title} <br/>
+                                            <strong>Escrow Held:</strong> ৳{Number(d.payment_amount).toLocaleString()} <br/>
+                                            <strong>Shipping:</strong> {d.carrier} - {d.tracking_number}
+                                        </div>
+                                        <div style={{ background: "#f8fafc", padding: "10px", borderRadius: "6px" }}>
+                                            <strong>Reason for Dispute:</strong><br/>
+                                            <span style={{ color: "#e74c3c" }}>"{d.reason}"</span>
+                                        </div>
+                                    </div>
+
+                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "15px", marginBottom: "15px", fontSize: "14px" }}>
+                                        <div>
+                                            <strong>Buyer:</strong> {d.buyer_username} <br/>
+                                            <strong>Email:</strong> {d.buyer_email}
+                                        </div>
+                                        <div>
+                                            <strong>Seller:</strong> {d.seller_username} <br/>
+                                            <strong>Email:</strong> {d.seller_email}
+                                        </div>
+                                    </div>
+
+                                    {d.dispute_status === 'open' && (
+                                        <div style={{ display: "flex", gap: "10px", borderTop: "1px solid var(--border)", paddingTop: "15px" }}>
+                                            <button 
+                                                onClick={() => handleResolveDispute(d.dispute_id, 'refund_buyer')}
+                                                disabled={actionLoading}
+                                                style={{ background: "#e74c3c", color: "white", padding: "8px 12px", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}
+                                            >
+                                                Side with Buyer (Refund)
+                                            </button>
+                                            <button 
+                                                onClick={() => handleResolveDispute(d.dispute_id, 'release_seller')}
+                                                disabled={actionLoading}
+                                                style={{ background: "#27ae60", color: "white", padding: "8px 12px", border: "none", borderRadius: "6px", cursor: "pointer", fontWeight: "bold" }}
+                                            >
+                                                Side with Seller (Release)
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            )}
+
         </div>
     );
 }
