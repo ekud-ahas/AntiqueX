@@ -76,37 +76,6 @@ const getUserTransactions = async (req, res) => {
     }
 };
 
-// Pay for a pending transaction (Protected, Buyer only)
-const payTransaction = async (req, res) => {
-    try {
-        const { id } = req.params;
-        const buyer_id = req.user.userId;
-        const { payment_method_type, payment_method_id, address_id, delivery_address_note } = req.body;
-
-        const result = await transactionModel.processPayment({
-            txnId: id,
-            buyerId: buyer_id,
-            paymentMethodType: payment_method_type,
-            paymentMethodId: payment_method_id,
-            addressId: address_id,
-            deliveryAddressNote: delivery_address_note
-        });
-
-        if (result.error) {
-            return res.status(result.status || 400).json({ error: result.error });
-        }
-
-        res.status(200).json({
-            message: "Payment processed successfully",
-            transaction: result.transaction
-        });
-
-    } catch (error) {
-        console.error("PAY TRANSACTION ERROR:", error);
-        res.status(500).json({ error: "Failed to process payment" });
-    }
-};
-
 module.exports = {
     closeAuctionAndRecordWinner,
     closeAuctionEndpoint,
