@@ -33,7 +33,9 @@ function ItemDetails() {
     const [timeLeft, setTimeLeft] = useState("");
 
     const [showAddressModal, setShowAddressModal] = useState(false);
-    const [newAddress, setNewAddress] = useState({ house: "", street: "", city: "" });
+        const [newAddress, setNewAddress] = useState({ house: "", street: "", city: "" });
+    const [addresses, setAddresses] = useState([]);
+    const [selectedAddressId, setSelectedAddressId] = useState("");
 
     const fetchAuction = async () => {
         try {
@@ -148,6 +150,7 @@ function ItemDetails() {
                     method: "POST",
                     body: JSON.stringify({
                         bid_amount: Number(bidAmount),
+                        addressId: selectedAddressId
                     }),
                 }
             );
@@ -217,7 +220,17 @@ function ItemDetails() {
 
             setShowAddressModal(false);
             setNewAddress({ house: "", street: "", city: "" });
-            await executeBid();
+            // re-fetch addresses so the new one is selected
+            const addrRes = await authFetch("/api/profile/addresses");
+            const addrData = await addrRes.json();
+            if (Array.isArray(addrData) && addrData.length > 0) {
+                setAddresses(addrData);
+                setSelectedAddressId(addrData[0].address_id);
+            }
+            // Cannot automatically execute bid here easily because selectedAddressId might not be updated in closure,
+            // but we can pass it directly to a modified executeBid or let the user click submit again.
+            // Let's just let the user click Place Bid again with their new address loaded.
+            setMessage("Address saved! Please click Place Bid again.");
         } catch (err) {
             alert(err.message || "Failed to save address");
         }
@@ -347,7 +360,7 @@ function ItemDetails() {
                 <div className="details-info">
                     <div className="details-header-tag">
                         <span className="auction-label">
-                            AntiqueX Verified Auction #{auction.auction_id}
+                            AntiqueX Auction #{auction.auction_id}
                         </span>
                         <span className={`badge badge-${isEnded ? "ended" : auction.status || "scheduled"}`}>
                             {isEnded ? "Ended" : auction.status}
@@ -519,6 +532,27 @@ function ItemDetails() {
                             </div>
 
                             <form onSubmit={handleBid} className="bid-form">
+                                {currentUser && addresses.length > 0 && (
+                                    <select 
+                                        className="bid-input" 
+                                        style={{ marginBottom: '10px' }}
+                                        value={selectedAddressId}
+                                        onChange={(e) => setSelectedAddressId(e.target.value)}
+                                        required
+                                    >
+                                        <option value="" disabled>Select Delivery Address</option>
+                                        {addresses.map(addr => (
+                                            <option key={addr.address_id} value={addr.address_id}>
+                                                {addr.house ? addr.house + ', ' : ''}{addr.street}, {addr.city}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                                {currentUser && addresses.length === 0 && (
+                                    <p style={{ color: '#d9534f', fontSize: '0.9rem', marginBottom: '10px' }}>
+                                        No address found. You will be prompted to add one.
+                                    </p>
+                                )}
                                 <input
                                     className="bid-input"
                                     type="number"

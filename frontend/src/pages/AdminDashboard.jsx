@@ -266,7 +266,7 @@ function AdminDashboard() {
                     className={`tab-btn ${activeTab === "disputes" ? "active" : ""}`}
                     onClick={() => setActiveTab("disputes")}
                 >
-                     Disputes ({disputesList.length})
+                     Disputes ({disputesList.filter(d => d.dispute_status === "open").length})
                 </button>
             </div>
 
@@ -535,8 +535,10 @@ function AdminDashboard() {
                                             Resolution Decision: 
                                             {d.shipment_status === 'dispute_refunded' ? (
                                                 <span style={{ color: "#e74c3c", marginLeft: "10px" }}>Sided with Buyer (Refunded)</span>
-                                            ) : (
+                                            ) : d.shipment_status === 'delivered' ? (
                                                 <span style={{ color: "#27ae60", marginLeft: "10px" }}>Sided with Seller (Released)</span>
+                                            ) : (
+                                                <span style={{ color: "gray", marginLeft: "10px" }}>Resolved</span>
                                             )}
                                         </div>
                                     )}

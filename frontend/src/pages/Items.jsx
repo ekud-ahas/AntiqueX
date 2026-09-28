@@ -103,7 +103,7 @@ function Items() {
         return <div className="items-message">Loading live auctions…</div>;
     }
 
-    if (error) {
+    if (error) {i
         return <div className="items-message error">{error}</div>;
     }
 

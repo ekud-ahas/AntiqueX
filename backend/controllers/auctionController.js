@@ -79,7 +79,11 @@ const placeBid = async (req, res) => {
         const { id } = req.params;
         if (!(typeof id === "string" && id.length > 10 && id.includes("-")) && (isNaN(Number(id)) || Number(id) <= 0)) return res.status(400).json({ error: "Invalid ID parameter" });
         const bidder_id = req.user.userId;
-        const { bid_amount } = req.body;
+        const { bid_amount, addressId } = req.body;
+
+        if (!addressId || isNaN(Number(addressId)) || Number(addressId) <= 0) {
+            return res.status(400).json({ error: "A valid shipping address is required to place a bid", code: "NO_ADDRESS" });
+        }
 
         if (!bid_amount || isNaN(Number(bid_amount)) || !isFinite(Number(bid_amount)) || Number(bid_amount) <= 0 || Number(bid_amount) > 999999999) {
             return res.status(400).json({

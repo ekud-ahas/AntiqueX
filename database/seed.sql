@@ -10,7 +10,7 @@ INSERT INTO admins (username, email, password, role) VALUES
 ('admin', 'admin@antiquex.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e', 'admin'),
 ('moderator_sarah', 'sarah.mod@antiquex.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e', 'moderator');
 
--- 2. USERS (Default password: 'password123')
+-- 2. USERS 
 INSERT INTO users (username, full_name, email, password) VALUES
 ('john_smith', 'John Smith', 'john@example.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e'),
 ('emma_wilson', 'Emma Wilson', 'emma@example.com', '$2b$10$5nfxbX4B52C80wfTZis0AON4YQ0LEgHv7P3I6TB6u0h22s.JyOD7e'),

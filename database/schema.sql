@@ -82,6 +82,7 @@ CREATE TABLE auctions (
     item_id INT NOT NULL UNIQUE REFERENCES items(item_id) ON DELETE CASCADE,
     start_time TIMESTAMP NOT NULL,
     end_time TIMESTAMP NOT NULL,
+    address_id INT REFERENCES addresses(address_id) ON DELETE SET NULL,
     min_increment NUMERIC(12, 2) NOT NULL CHECK (min_increment > 0),
     status VARCHAR(30) NOT NULL DEFAULT 'scheduled' CHECK (status IN ('scheduled', 'active', 'ended', 'cancelled')),
     winner_bid_id INT,
@@ -92,6 +93,7 @@ CREATE TABLE auctions (
 CREATE TABLE auto_bids (
     auto_bid_id SERIAL PRIMARY KEY,
     user_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
+    address_id INT REFERENCES addresses(address_id) ON DELETE SET NULL,
     increment NUMERIC(12, 2) NOT NULL CHECK (increment > 0),
     max_amount NUMERIC(12, 2) NOT NULL CHECK (max_amount > 0)
 );
@@ -102,6 +104,7 @@ CREATE TABLE bids (
     auction_id INT NOT NULL REFERENCES auctions(auction_id) ON DELETE CASCADE,
     bidder_id INT NOT NULL REFERENCES users(user_id) ON DELETE CASCADE,
     auto_bid_id INT REFERENCES auto_bids(auto_bid_id) ON DELETE SET NULL,
+    address_id INT REFERENCES addresses(address_id) ON DELETE SET NULL,
     bid_amount NUMERIC(12, 2) NOT NULL CHECK (bid_amount > 0),
     bid_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

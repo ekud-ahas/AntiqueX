@@ -206,12 +206,18 @@ async function runTests() {
             const currentPrice = Number(activeItem.current_price || activeItem.starting_price || 1000);
             const bidAmount = currentPrice + (Number(activeItem.min_increment) || 500);
 
+            // Ensure test user has an address
+            const addrRes = await request("POST", "/api/profile/addresses", {
+                house: "123", street: "Test St", city: "Dhaka"
+            }, { Authorization: `Bearer ${activeCustToken}` });
+            const addressId = addrRes.data.address?.address_id || addrRes.data.address_id || 1;
+
             // Run concurrent identical bids at the exact same time with escrow fund verification
             const [bid1, bid2] = await Promise.all([
-                request("POST", `/api/auctions/${auctionId}/bids`, { bid_amount: bidAmount }, {
+                request("POST", `/api/auctions/${auctionId}/bids`, { bid_amount: bidAmount, addressId }, {
                     Authorization: `Bearer ${activeCustToken}`
                 }),
-                request("POST", `/api/auctions/${auctionId}/bids`, { bid_amount: bidAmount }, {
+                request("POST", `/api/auctions/${auctionId}/bids`, { bid_amount: bidAmount, addressId }, {
                     Authorization: `Bearer ${activeCustToken}`
                 })
             ]);
@@ -220,8 +226,8 @@ async function runTests() {
             const successes = statuses.filter(s => s === 201).length;
 
             assert(
-                successes <= 1,
-                "Concurrent duplicate bids handled safely: escrow fund hold & row lock prevent race condition",
+                successes === 1,
+                "Concurrent duplicate bids handled safely: exactly one bid succeeds and locks escrow",
                 `Bid1 status: ${bid1.status}, Bid2 status: ${bid2.status}`
             );
         } else {
