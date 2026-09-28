@@ -85,7 +85,7 @@ const addAddress = async (req, res) => {
 const deleteAddress = async (req, res) => {
     const { userId } = req.user;
     const { id } = req.params;
-    if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
+    if (!(typeof id === "string" && id.length > 10 && id.includes("-")) && (isNaN(Number(id)) || Number(id) <= 0)) return res.status(400).json({ error: "Invalid ID parameter" });
 
     const client = await pool.connect();
     try {

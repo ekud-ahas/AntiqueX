@@ -19,7 +19,7 @@ const getCategories = async (req, res) => {
 const getCategory = async (req, res) => {
     try {
         const { id } = req.params;
-        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
+        if (!(typeof id === "string" && id.length > 10 && id.includes("-")) && (isNaN(Number(id)) || Number(id) <= 0)) return res.status(400).json({ error: "Invalid ID parameter" });
         const category = await categoryModel.getCategoryById(id);
 
         if (!category) {
@@ -42,7 +42,7 @@ const getCategory = async (req, res) => {
 const getCategoryItems = async (req, res) => {
     try {
         const { id } = req.params;
-        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
+        if (!(typeof id === "string" && id.length > 10 && id.includes("-")) && (isNaN(Number(id)) || Number(id) <= 0)) return res.status(400).json({ error: "Invalid ID parameter" });
 
         const category = await categoryModel.getCategoryById(id);
         if (!category) {
@@ -93,7 +93,7 @@ const createCategory = async (req, res) => {
 const deleteCategory = async (req, res) => {
     try {
         const { id } = req.params;
-        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
+        if (!(typeof id === "string" && id.length > 10 && id.includes("-")) && (isNaN(Number(id)) || Number(id) <= 0)) return res.status(400).json({ error: "Invalid ID parameter" });
         const deleted = await categoryModel.deleteCategoryById(id);
         if (!deleted) {
             return res.status(404).json({

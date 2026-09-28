@@ -17,7 +17,7 @@ const markRead = async (req, res) => {
     try {
         const userId = req.user.userId;
         const { id } = req.params;
-        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
+        if (!(typeof id === "string" && id.length > 10 && id.includes("-")) && (isNaN(Number(id)) || Number(id) <= 0)) return res.status(400).json({ error: "Invalid ID parameter" });
         const result = await notificationModel.markAsRead(userId, id === "all" ? null : id);
         res.json({ message: "Marked as read", result });
     } catch (error) {

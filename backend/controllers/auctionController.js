@@ -5,7 +5,7 @@ const transactionModel = require("../models/transactionModel");
 const getAuction = async (req, res) => {
     try {
         const { id } = req.params;
-        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
+        if (!(typeof id === "string" && id.length > 10 && id.includes("-")) && (isNaN(Number(id)) || Number(id) <= 0)) return res.status(400).json({ error: "Invalid ID parameter" });
 
         // Auto-close expired active auctions and record winners & transactions
         const expiredAuctions = await auctionModel.getExpiredActiveAuctions();
@@ -77,7 +77,7 @@ const getAuction = async (req, res) => {
 const placeBid = async (req, res) => {
     try {
         const { id } = req.params;
-        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
+        if (!(typeof id === "string" && id.length > 10 && id.includes("-")) && (isNaN(Number(id)) || Number(id) <= 0)) return res.status(400).json({ error: "Invalid ID parameter" });
         const bidder_id = req.user.userId;
         const { bid_amount } = req.body;
 
@@ -129,7 +129,7 @@ const endAuctionEarly = async (req, res) => {
     const client = await require('../config/db').connect();
     try {
         const { id } = req.params;
-        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
+        if (!(typeof id === "string" && id.length > 10 && id.includes("-")) && (isNaN(Number(id)) || Number(id) <= 0)) return res.status(400).json({ error: "Invalid ID parameter" });
         const seller_id = req.user.userId;
 
         await client.query("BEGIN");
