@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 
@@ -20,6 +21,17 @@ import AdminDashboard from "./pages/AdminDashboard";
 import Notifications from "./pages/Notifications";
 
 function App() {
+    // Globally prevent number inputs from changing value on mouse scroll
+    useEffect(() => {
+        const handleWheel = (e) => {
+            if (document.activeElement.type === "number") {
+                document.activeElement.blur();
+            }
+        };
+        // Use capture phase to intercept before input handles it
+        window.addEventListener("wheel", handleWheel, { passive: true, capture: true });
+        return () => window.removeEventListener("wheel", handleWheel, { capture: true });
+    }, []);
   return (
     <AuthProvider>
       <BrowserRouter>
