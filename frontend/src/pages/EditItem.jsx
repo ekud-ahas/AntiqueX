@@ -226,11 +226,14 @@ function EditItem() {
     );
   }
 
+
   if (loading) {
     return <div className="items-message">Loading item details…</div>;
   }
 
   const hasBids = auctionInfo.total_bids > 0;
+  const isListed = auctionInfo.status === 'active' || auctionInfo.status === 'scheduled';
+
 
   return (
     <div className="sell-page">
@@ -252,6 +255,7 @@ function EditItem() {
               value={form.title}
               onChange={handleChange}
               required
+              disabled={isListed}
             />
           </div>
 
@@ -291,6 +295,7 @@ function EditItem() {
                 name="condition"
                 value={form.condition}
                 onChange={handleChange}
+                disabled={isListed}
               >
                 <option value="Pristine">Pristine / Mint</option>
                 <option value="Excellent">Excellent</option>
@@ -311,6 +316,7 @@ function EditItem() {
                 name="year_of_origin"
                 value={form.year_of_origin}
                 onChange={handleChange}
+                disabled={isListed}
               />
             </div>
 
@@ -425,6 +431,7 @@ function EditItem() {
                     className="btn btn-danger"
                     style={{ padding: "4px 8px", fontSize: "11px", marginTop: "6px", width: "100%" }}
                     onClick={() => handleDeleteImage(img.img_id)}
+                    disabled={isListed}
                   >
                     Remove
                   </button>
@@ -433,6 +440,7 @@ function EditItem() {
             </div>
           )}
 
+          {!isListed && (
           <div style={{ display: "flex", gap: "8px", marginTop: "10px" }}>
             <input
               type="url"
@@ -449,6 +457,7 @@ function EditItem() {
               Add Image
             </button>
           </div>
+          )}
         </div>
 
         {message && (

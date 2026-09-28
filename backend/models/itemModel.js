@@ -254,15 +254,26 @@ const updateItem = async (itemId, {
     min_increment,
     auction_duration
 }) => {
+
     // Check if auction already has bids placed
-    const bidCheck = await pool.query(
-        `SELECT COUNT(*) AS bid_count 
-         FROM bids b 
-         JOIN auctions a ON b.auction_id = a.auction_id 
+    const checkAuction = await pool.query(
+        `SELECT a.status, COALESCE((SELECT COUNT(*) FROM bids b WHERE b.auction_id = a.auction_id), 0) AS bid_count 
+         FROM auctions a 
          WHERE a.item_id = $1`,
         [itemId]
     );
-    const hasBids = parseInt(bidCheck.rows[0]?.bid_count || "0", 10) > 0;
+    const auctionStatus = checkAuction.rows[0]?.status;
+    const hasBids = parseInt(checkAuction.rows[0]?.bid_count || "0", 10) > 0;
+    const isListed = auctionStatus === 'active' || auctionStatus === 'scheduled';
+
+    if (isListed) {
+        const currentItem = await pool.query("SELECT title, year_of_origin, condition FROM items WHERE item_id = $1", [itemId]);
+        const curr = currentItem.rows[0];
+        if (title !== undefined && title !== curr.title) throw new Error("Cannot alter title while auction is listed.");
+        if (year_of_origin !== undefined && Number(year_of_origin) !== Number(curr.year_of_origin)) throw new Error("Cannot alter year of origin while auction is listed.");
+        if (condition !== undefined && condition !== curr.condition) throw new Error("Cannot alter condition while auction is listed.");
+    }
+
 
     if (hasBids && starting_price !== undefined) {
         const currentItem = await pool.query("SELECT starting_price FROM items WHERE item_id = $1", [itemId]);
@@ -369,6 +380,14 @@ const deleteItem = async (itemId) => {
  * Add an image to an item
  */
 const addItemImage = async (itemId, imgUrl) => {
+
+    const checkAuction = await pool.query("SELECT status FROM auctions WHERE item_id = $1", [itemId]);
+    if (checkAuction.rows[0] && (checkAuction.rows[0].status === 'active' || checkAuction.rows[0].status === 'scheduled')) {
+        const err = new Error("Cannot modify images while auction is listed.");
+        err.statusCode = 400;
+        throw err;
+    }
+
     const query = `
         INSERT INTO item_images (item_id, img_url)
         VALUES ($1, $2)
