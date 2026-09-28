@@ -181,17 +181,24 @@ function MyItems() {
                       End Early
                     </button>
                   )}
-                  <Link to={`/my-items/${item.item_id}/edit`} className="btn btn-outline" onClick={(e) => e.stopPropagation()}>
-
-                    Edit Details
-                  </Link>
-                  <button
-                    type="button"
-                    className="btn btn-danger"
-                    onClick={(e) => { e.stopPropagation(); handleDelete(item.item_id); }}
-                  >
-                    Delete
-                  </button>
+                  {!(item.auction_status === 'ended' && item.total_bids > 0) ? (
+                    <>
+                      <Link to={`/my-items/${item.item_id}/edit`} className="btn btn-outline" onClick={(e) => e.stopPropagation()}>
+                        Edit Details
+                      </Link>
+                      <button
+                        type="button"
+                        className="btn btn-danger"
+                        onClick={(e) => { e.stopPropagation(); handleDelete(item.item_id); }}
+                      >
+                        Delete
+                      </button>
+                    </>
+                  ) : (
+                    <button type="button" className="btn btn-outline" onClick={(e) => { e.stopPropagation(); navigate(`/items/${item.item_id}`); }}>
+                      View Details
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
