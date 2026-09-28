@@ -1,14 +1,12 @@
-1. data globally available kora, not locally, mane dhorlam onnno pc theke account banale seta amar pc theke access kora jai -- eta korar dorkar nai, hassle beshi
+1. Min bid increment can be any number, right now if min bid increment is 750, it either tell me to do 700 or 800
 
-2. login korar por homepage update hoy na, reload kora lage, login register button thake jeta login korar por thakar kotha na -- done
+2. in frontend, category has chair emoji, remove this
 
-3. wallet e deposit page e payment method add kora, jekhane saved payment thakbe. payment method diye tk dile pin etc dewar dorkar nai, karon tara saved method. nahole notun kono account diye tk nile details enter kora lagbe
+3. Assume I disputed a delivery, what will happen, nobody know right now. It should be solved by admin, by maybe return money to buyer or suspending the seller account or flag the auction or something, i dont know, you tell me.
 
-4. navigation bar ektu wide kora lgbe, profile icon add kora lagbe, logout button ta profile er vitore chole jabe, pashe aaccount er balance dekha jabe sob somoy
+4. Server error while confirming delivery by yes i received it
 
-5. auction/ item page e reload korle bug hocche -- done 
+5. Admin moderator should search user by user name or id or full name whatever u prefer, search item by item id or item name or whatever u want
 
-6. delivery option implement kora lagbe
-
-7.  delivery gateway, with admin dispute reolve etc
-
+6. (Optional, only an admin can add another moderator), jai hok eta kora ektu vejal hobe ig, karon
+eta korle eta kivabe kore ota dekha lagbe
