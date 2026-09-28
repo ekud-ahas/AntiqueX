@@ -17,6 +17,8 @@ function AdminDashboard() {
     const [stats, setStats] = useState(null);
     const [usersList, setUsersList] = useState([]);
     const [itemsList, setItemsList] = useState([]);
+    const [userSearch, setUserSearch] = useState("");
+    const [itemSearch, setItemSearch] = useState("");
     const [disputesList, setDisputesList] = useState([]);
 
     const [loading, setLoading] = useState(true);
@@ -25,6 +27,25 @@ function AdminDashboard() {
     const [actionLoading, setActionLoading] = useState(false);
 
     // Auth header used by every API call
+    
+    const filteredUsers = usersList.filter(u => {
+        if (!userSearch) return true;
+        const q = userSearch.toLowerCase();
+        return u.user_id.toString().includes(q) ||
+               u.username.toLowerCase().includes(q) ||
+               u.full_name.toLowerCase().includes(q) ||
+               u.email.toLowerCase().includes(q);
+    });
+
+    const filteredItems = itemsList.filter(i => {
+        if (!itemSearch) return true;
+        const q = itemSearch.toLowerCase();
+        return i.item_id.toString().includes(q) ||
+               i.title.toLowerCase().includes(q) ||
+               i.category_name.toLowerCase().includes(q) ||
+               i.seller_username.toLowerCase().includes(q);
+    });
+
     const authHeader = { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" };
 
     const fetchAllAdminData = useCallback(async () => {
@@ -232,14 +253,14 @@ function AdminDashboard() {
                         className={`tab-btn ${activeTab === "users" ? "active" : ""}`}
                         onClick={() => setActiveTab("users")}
                     >
-                         User Directory ({usersList.length})
+                         User Directory
                     </button>
                 )}
                 <button
                     className={`tab-btn ${activeTab === "items" ? "active" : ""}`}
                     onClick={() => setActiveTab("items")}
                 >
-                     Item Moderation ({itemsList.length})
+                     Item Moderation
                 </button>
                 <button
                     className={`tab-btn ${activeTab === "disputes" ? "active" : ""}`}
@@ -327,9 +348,15 @@ function AdminDashboard() {
             {/* ══════════════ TAB 2: USER DIRECTORY ══════════════ */}
             {activeTab === "users" && (
                 <div className="admin-section">
-                    <div className="section-header-flex">
+                    <div className="section-header-flex" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <h2>Registered User Directory</h2>
-                        <span className="count-badge">{usersList.length} Accounts</span>
+                        <input
+                            type="text"
+                            placeholder="Search ID, Username, Name, Email..."
+                            value={userSearch}
+                            onChange={(e) => setUserSearch(e.target.value)}
+                            style={{ padding: "8px", borderRadius: "4px", border: "1px solid var(--border)", width: "300px" }}
+                        />
                     </div>
                     <table className="admin-table">
                         <thead>
@@ -345,7 +372,7 @@ function AdminDashboard() {
                             </tr>
                         </thead>
                         <tbody>
-                            {usersList.map((u) => (
+                            {filteredUsers.map((u) => (
                                 <tr key={u.user_id}>
                                     <td>#{u.user_id}</td>
                                     <td><strong>@{u.username}</strong></td>
@@ -377,9 +404,15 @@ function AdminDashboard() {
             {/* ══════════════ TAB 3: ITEM MODERATION ══════════════ */}
             {activeTab === "items" && (
                 <div className="admin-section">
-                    <div className="section-header-flex">
+                    <div className="section-header-flex" style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                         <h2>All Listed Artifacts & Auctions</h2>
-                        <span className="count-badge">{itemsList.length} Artifacts</span>
+                        <input
+                            type="text"
+                            placeholder="Search ID, Title, Category, Seller..."
+                            value={itemSearch}
+                            onChange={(e) => setItemSearch(e.target.value)}
+                            style={{ padding: "8px", borderRadius: "4px", border: "1px solid var(--border)", width: "300px" }}
+                        />
                     </div>
                     <table className="admin-table">
                         <thead>
@@ -395,7 +428,7 @@ function AdminDashboard() {
                             </tr>
                         </thead>
                         <tbody>
-                            {itemsList.map((item) => (
+                            {filteredItems.map((item) => (
                                 <tr key={item.item_id}>
                                     <td>#{item.item_id}</td>
                                     <td>
