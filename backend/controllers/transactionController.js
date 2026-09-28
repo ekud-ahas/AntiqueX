@@ -9,6 +9,7 @@ const closeAuctionAndRecordWinner = async (auctionId, customClient = null) => {
 const closeAuctionEndpoint = async (req, res) => {
     try {
         const { auctionId } = req.params;
+        if (isNaN(Number(auctionId)) || Number(auctionId) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const transaction = await transactionModel.closeAuctionAndRecordWinner(auctionId);
 
         res.json({
@@ -25,6 +26,7 @@ const closeAuctionEndpoint = async (req, res) => {
 const getTransactionById = async (req, res) => {
     try {
         const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const transaction = await transactionModel.getTransactionDetails(id);
 
         if (!transaction) {
@@ -56,6 +58,7 @@ const getTransactionById = async (req, res) => {
 const getUserTransactions = async (req, res) => {
     try {
         const { userId } = req.params;
+        if (isNaN(Number(userId)) || Number(userId) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const currentUserId = req.user ? req.user.userId : null;
         const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 

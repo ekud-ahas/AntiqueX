@@ -4,6 +4,7 @@ const paymentModel = require("../models/paymentModel");
 const getUserPaymentMethods = async (req, res) => {
     try {
         const { userId } = req.params;
+        if (isNaN(Number(userId)) || Number(userId) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const currentUserId = req.user.userId;
         if (Number(currentUserId) !== Number(userId)) {
             return res.status(403).json({
@@ -45,6 +46,7 @@ const addPaymentMethod = async (req, res) => {
 const deletePaymentMethod = async (req, res) => {
     try {
         const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const user_id = req.user.userId;
 
         const deleted = await paymentModel.deletePaymentMethod(id, user_id);

@@ -15,6 +15,7 @@ const shipItem = async (req, res) => {
     try {
         const { userId } = req.user;
         const { shipmentId } = req.params;
+        if (isNaN(Number(shipmentId)) || Number(shipmentId) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const { carrier, trackingNumber } = req.body;
         
         if (!carrier || !trackingNumber) {
@@ -37,6 +38,7 @@ const markDelivered = async (req, res) => {
     try {
         const { userId } = req.user;
         const { shipmentId } = req.params;
+        if (isNaN(Number(shipmentId)) || Number(shipmentId) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         
         const result = await shipmentModel.markDelivered(shipmentId, userId);
         res.status(200).json({ message: "Delivery confirmed. Escrow released to seller.", shipment: result });
@@ -54,6 +56,7 @@ const openDispute = async (req, res) => {
     try {
         const { userId } = req.user;
         const { shipmentId } = req.params;
+        if (isNaN(Number(shipmentId)) || Number(shipmentId) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const { reason } = req.body;
         
         if (!reason || !reason.trim()) {

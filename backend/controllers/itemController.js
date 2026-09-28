@@ -19,20 +19,18 @@ const getItems = async (req, res) => {
 const getItemById = async (req, res) => {
     try {
         const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) {
+            return res.status(400).json({ error: "Invalid ID parameter" });
+        }
         const item = await itemModel.getItemByIdWithDetails(id);
 
         if (!item) {
-            return res.status(404).json({
-                error: "Item not found"
-            });
+            return res.status(404).json({ error: "Item not found" });
         }
-
         res.json(item);
     } catch (error) {
         console.error("GET ITEM ERROR:", error);
-        res.status(500).json({
-            error: "Failed to retrieve item"
-        });
+        res.status(500).json({ error: "Failed to retrieve item" });
     }
 };
 
@@ -55,7 +53,7 @@ const createItem = async (req, res) => {
         // Securely resolve seller_id from authenticated token
         const seller_id = req.user.userId;
 
-        if (!seller_id || !category_id || !title || starting_price === undefined || starting_price === null || Number(starting_price) < 0 || Number(starting_price) > 999999999) {
+        if (!seller_id || !category_id || isNaN(Number(category_id)) || !title || title.trim() === "" || starting_price === undefined || starting_price === null || isNaN(Number(starting_price)) || !isFinite(Number(starting_price)) || Number(starting_price) < 0 || Number(starting_price) > 999999999) {
             return res.status(400).json({
                 error: "Required fields are missing (category, title, starting_price)"
             });
@@ -63,8 +61,15 @@ const createItem = async (req, res) => {
         
         // Additional validation for increment
         if (min_increment !== undefined && min_increment !== null && min_increment !== "") {
-            if (Number(min_increment) < 1) {
+            if (isNaN(Number(min_increment)) || !isFinite(Number(min_increment)) || Number(min_increment) < 1) {
                 return res.status(400).json({ error: "Minimum bid increment must be at least 1" });
+            }
+        }
+
+        
+        if (auction_duration !== undefined && auction_duration !== null && auction_duration !== "") {
+            if (isNaN(Number(auction_duration)) || !isFinite(Number(auction_duration)) || Number(auction_duration) <= 0) {
+                return res.status(400).json({ error: "Auction duration must be a valid positive number" });
             }
         }
 
@@ -117,7 +122,8 @@ const createItem = async (req, res) => {
 // Update an existing item (Authenticated, Ownership or Admin verified)
 const updateItem = async (req, res) => {
     try {
-        const { id } = req.params;
+        console.log("TESTING GETITEMBYID:", req.params.id); const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const {
             category_id,
             title,
@@ -181,7 +187,8 @@ const updateItem = async (req, res) => {
 // Delete an item (Authenticated, Ownership or Admin verified)
 const deleteItem = async (req, res) => {
     try {
-        const { id } = req.params;
+        console.log("TESTING GETITEMBYID:", req.params.id); const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const userId = req.user.userId;
         const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
 
@@ -225,7 +232,8 @@ const deleteItem = async (req, res) => {
 // Add image to item (Authenticated, Ownership or Admin verified)
 const addItemImage = async (req, res) => {
     try {
-        const { id } = req.params;
+        console.log("TESTING GETITEMBYID:", req.params.id); const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const { img_url } = req.body;
         const userId = req.user.userId;
         const isAdmin = req.user && (req.user.role === "admin" || req.user.role === "moderator");
@@ -268,7 +276,8 @@ const addItemImage = async (req, res) => {
 // Get images for item (Public)
 const getItemImages = async (req, res) => {
     try {
-        const { id } = req.params;
+        console.log("TESTING GETITEMBYID:", req.params.id); const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const images = await itemModel.getItemImages(id);
         res.json(images);
     } catch (error) {

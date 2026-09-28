@@ -88,6 +88,7 @@ const deleteAddress = async (req, res) => {
         await client.query("BEGIN");
         const { userId } = req.user;
         const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         
         // Ensure ownership before deleting
         const check = await client.query("SELECT * FROM addresses WHERE address_id = $1 AND user_id = $2", [id, userId]);

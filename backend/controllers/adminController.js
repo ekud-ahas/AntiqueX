@@ -48,6 +48,7 @@ const getAdminUsers = async (req, res) => {
 const toggleUserStatus = async (req, res) => {
     try {
         const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const { status } = req.body;
 
         if (!["active", "suspended"].includes(status)) {
@@ -84,6 +85,7 @@ const getAdminItems = async (req, res) => {
 const toggleAuctionStatus = async (req, res) => {
     try {
         const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const { status } = req.body;
 
         if (!["active", "cancelled"].includes(status)) {
@@ -115,6 +117,7 @@ const toggleAuctionStatus = async (req, res) => {
 const deleteAdminCategory = async (req, res) => {
     try {
         const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const deleted = await adminStatsModel.deleteCategory(id);
         if (!deleted) {
             return res.status(404).json({ error: "Category not found" });
@@ -143,6 +146,7 @@ const getAdminDisputes = async (req, res) => {
 const resolveAdminDispute = async (req, res) => {
     try {
         const { id } = req.params;
+        if (isNaN(Number(id)) || Number(id) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const { decision } = req.body; // 'refund_buyer' or 'release_seller'
         const adminId = req.user.userId;
 

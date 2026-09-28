@@ -5,6 +5,7 @@ const watchlistModel = require("../models/watchlistModel");
 const getUserWatchlist = async (req, res) => {
     try {
         const { userId } = req.params;
+        if (isNaN(Number(userId)) || Number(userId) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const currentUserId = req.user.userId;
         const isAdmin = req.user.role === "admin" || req.user.role === "moderator";
 

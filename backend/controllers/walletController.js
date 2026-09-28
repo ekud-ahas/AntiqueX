@@ -5,6 +5,7 @@ const { processMockGatewayTransaction } = require("../services/mockPaymentGatewa
 const getWallet = async (req, res) => {
     try {
         const { userId } = req.params;
+        if (isNaN(Number(userId)) || Number(userId) <= 0) return res.status(400).json({ error: "Invalid ID parameter" });
         const currentUserId = req.user.userId;
         if (Number(currentUserId) !== Number(userId)) {
             return res.status(403).json({
@@ -32,7 +33,7 @@ const depositFunds = async (req, res) => {
         const { amount, method = "bkash", accountNumber, pin } = req.body;
         const depositAmount = Number(amount);
 
-        if (!user_id || isNaN(depositAmount) || depositAmount <= 0) {
+        if (!user_id || isNaN(depositAmount) || !isFinite(depositAmount) || depositAmount <= 0 || depositAmount > 999999999) {
             return res.status(400).json({ error: "Valid deposit amount (> 0) is required" });
         }
 
