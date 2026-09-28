@@ -311,7 +311,7 @@ function ItemDetails() {
                                             <th>Bidder</th>
                                             <th>Amount</th>
                                             <th>Time</th>
-                                            <th>Bid ID</th>
+                                            
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -329,9 +329,7 @@ function ItemDetails() {
                                                 <td className="bid-time-cell">
                                                     {formatDateTime(b.bid_time)}
                                                 </td>
-                                                <td className="bid-id-cell">
-                                                    #{b.bid_id}
-                                                </td>
+                                                
                                             </tr>
                                         ))}
                                     </tbody>
