@@ -295,7 +295,7 @@ function SellItem() {
                     </div>
 
                     <div className="image-section">
-                        <h3>Item Photographs</h3>
+                        <h3>Item Photographs <span style={{ color: "red" }}>*</span></h3>
 
                         <div className="form-group">
                             <label htmlFor="image_url">Image Web URL</label>
