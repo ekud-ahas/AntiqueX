@@ -32,6 +32,9 @@ function ItemDetails() {
     const [submittingBid, setSubmittingBid] = useState(false);
     const [timeLeft, setTimeLeft] = useState("");
 
+    const [showAddressModal, setShowAddressModal] = useState(false);
+    const [newAddress, setNewAddress] = useState({ house: "", street: "", city: "" });
+
     const fetchAuction = async () => {
         try {
             const response = await fetch(
@@ -136,9 +139,46 @@ function ItemDetails() {
         }
     };
 
-    const handleBid = async (event) => {
+    const executeBid = async () => {
+        setSubmittingBid(true);
+        try {
+            const response = await authFetch(
+                `/api/auctions/${id}/bids`,
+                {
+                    method: "POST",
+                    body: JSON.stringify({
+                        bid_amount: Number(bidAmount),
+                    }),
+                }
+            );
 
-        event.preventDefault();
+            const data = await response.json();
+
+            if (!response.ok) {
+                if (data.code === "NO_ADDRESS") {
+                    setShowAddressModal(true);
+                    return;
+                }
+                setIsError(true);
+                setMessage(data.error || "Failed to place bid.");
+                return;
+            }
+
+            setIsError(false);
+            setMessage("Bid placed successfully!");
+            setBidAmount("");
+
+            await fetchAuction();
+        } catch {
+            setIsError(true);
+            setMessage("Could not connect to the server.");
+        } finally {
+            setSubmittingBid(false);
+        }
+    };
+
+    const handleBid = async (event) => {
+        if (event) event.preventDefault();
         setMessage("");
         setIsError(false);
 
@@ -160,37 +200,26 @@ function ItemDetails() {
             return;
         }
 
-        setSubmittingBid(true);
+        await executeBid();
+    };
 
+    const submitAddressAndBid = async (e) => {
+        e.preventDefault();
+        setMessage("");
         try {
-            const response = await authFetch(
-                `/api/auctions/${id}/bids`,
-                {
-                    method: "POST",
-                    body: JSON.stringify({
-                        bid_amount: Number(bidAmount),
-                    }),
-                }
-            );
+            const res = await authFetch("/api/profile/addresses", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newAddress)
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Failed to save address");
 
-            const data = await response.json();
-
-            if (!response.ok) {
-                setIsError(true);
-                setMessage(data.error || "Failed to place bid.");
-                return;
-            }
-
-            setIsError(false);
-            setMessage(" Bid placed successfully!");
-            setBidAmount("");
-
-            await fetchAuction();
-        } catch {
-            setIsError(true);
-            setMessage("Could not connect to the server.");
-        } finally {
-            setSubmittingBid(false);
+            setShowAddressModal(false);
+            setNewAddress({ house: "", street: "", city: "" });
+            await executeBid();
+        } catch (err) {
+            alert(err.message || "Failed to save address");
         }
     };
 
