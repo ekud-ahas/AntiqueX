@@ -63,7 +63,22 @@ app.use("/api/profile", profileRoutes);
 // Admin APIs
 app.use("/api/admin", adminRoutes);
 
+
+// Global Error Handler for Multer and other middleware
+app.use((err, req, res, next) => {
+    if (err instanceof require('multer').MulterError) {
+        if (err.code === 'LIMIT_FILE_SIZE') {
+            return res.status(400).json({ error: "File too large. Maximum size is 5MB." });
+        }
+        return res.status(400).json({ error: err.message });
+    } else if (err) {
+        return res.status(400).json({ error: err.message });
+    }
+    next();
+});
+
 const PORT = process.env.PORT || 5000;
+
 
 app.listen(PORT, () => {
     console.log(`AntiqueX server running on port ${PORT}`);
