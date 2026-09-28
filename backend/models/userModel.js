@@ -18,7 +18,7 @@ const findByUsernameOrEmail = async (username, email) => {
  */
 const findByEmail = async (email) => {
     const query = `
-        SELECT user_id, username, full_name, email, password, status
+        SELECT user_id, username, full_name, email, password, status, profile_picture_url
         FROM users
         WHERE email = $1
     `;

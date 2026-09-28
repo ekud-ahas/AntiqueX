@@ -93,7 +93,8 @@ const register = async (req, res) => {
                 username: newUser.username,
                 full_name: newUser.full_name,
                 email: newUser.email,
-                role: "customer"
+                role: "customer",
+                profile_picture_url: newUser.profile_picture_url || null
             }
         });
 
@@ -148,7 +149,8 @@ const login = async (req, res) => {
                     username: user.username,
                     full_name: user.full_name,
                     email: user.email,
-                    role: "customer"
+                    role: "customer",
+                    profile_picture_url: user.profile_picture_url
                 }
             });
         }
