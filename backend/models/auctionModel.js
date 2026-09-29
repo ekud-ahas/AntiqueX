@@ -196,7 +196,7 @@ const getHighestBidAmount = async (auctionId) => {
 /**
  * Atomically validate and place a bid under a row-level lock and transaction
  */
-const placeBidWithLock = async ({ id, bidderId, bidAmount }) => {
+const placeBidWithLock = async ({ id, bidderId, bidAmount, addressId = null }) => {
     const client = await pool.connect();
     try {
         await client.query("BEGIN");
@@ -346,10 +346,10 @@ const placeBidWithLock = async ({ id, bidderId, bidAmount }) => {
 
         // 7. Insert new bid
         const newBidRes = await client.query(
-            `INSERT INTO bids (auction_id, bidder_id, bid_amount)
-             VALUES ($1, $2, $3)
+            `INSERT INTO bids (auction_id, bidder_id, bid_amount, address_id)
+             VALUES ($1, $2, $3, $4)
              RETURNING *`,
-            [auction.auction_id, bidderId, Number(bidAmount)]
+            [auction.auction_id, bidderId, Number(bidAmount), addressId]
         );
         const newBid = newBidRes.rows[0];
 

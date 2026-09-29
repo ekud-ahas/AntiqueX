@@ -105,10 +105,10 @@ const placeBid = async (req, res) => {
         }
 
         const newBid = await auctionModel.placeBidWithLock({
-
             id,
             bidderId: bidder_id,
-            bidAmount: Number(bid_amount)
+            bidAmount: Number(bid_amount),
+            addressId
         });
 
         res.status(201).json({
