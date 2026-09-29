@@ -86,7 +86,8 @@ function ItemDetails() {
                 })
                 .catch(err => console.error("Failed to load addresses", err));
         }
-    }, [currentUser]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentUser?.user_id]);
 
 
     // Live countdown timer
@@ -549,11 +550,11 @@ function ItemDetails() {
                                 </div>
                             </div>
 
-                            <form onSubmit={handleBid} className="bid-form">
+                            <form onSubmit={handleBid} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 {currentUser && addresses.length > 0 && (
                                     <select 
                                         className="bid-input" 
-                                        style={{ marginBottom: '10px' }}
+                                        style={{ width: '100%' }}
                                         value={selectedAddressId}
                                         onChange={(e) => setSelectedAddressId(e.target.value)}
                                         required
@@ -567,26 +568,28 @@ function ItemDetails() {
                                     </select>
                                 )}
 
-                                <input
-                                    className="bid-input"
-                                    type="number"
-                                    placeholder={`Min ৳${minAllowedBid}`}
-                                    value={bidAmount}
-                                    onChange={(event) =>
-                                        setBidAmount(event.target.value)
-                                    }
-                                    min={minAllowedBid}
-                                    step="1"
-                                    required
-                                />
+                                <div className="bid-form" style={{ width: '100%', margin: 0 }}>
+                                    <input
+                                        className="bid-input"
+                                        type="number"
+                                        placeholder={`Min ৳${minAllowedBid}`}
+                                        value={bidAmount}
+                                        onChange={(event) =>
+                                            setBidAmount(event.target.value)
+                                        }
+                                        min={minAllowedBid}
+                                        step="1"
+                                        required
+                                    />
 
-                                <button
-                                    type="submit"
-                                    className="bid-btn"
-                                    disabled={submittingBid}
-                                >
-                                    {submittingBid ? "Submitting…" : "Place Bid"}
-                                </button>
+                                    <button
+                                        type="submit"
+                                        className="bid-btn"
+                                        disabled={submittingBid}
+                                    >
+                                        {submittingBid ? "Submitting…" : "Place Bid"}
+                                    </button>
+                                </div>
                             </form>
 
                             {message && (
